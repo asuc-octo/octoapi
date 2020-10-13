@@ -38,5 +38,38 @@ paths:
           in: query
           name: name
           required: true
+  /api/gyms/range:
+    get:
+      summary: Gets gyms within distance range
+      tags: []
+      responses: {}
+      operationId: get-api-gyms-range
+      parameters:
+        - schema:
+            type: number
+          in: query
+          name: latitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: longitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: radius
+          required: true
+  /api/gyms/open:
+    get:
+      summary: Gyms open at time
+      tags: []
+      responses: {}
+      operationId: get-api-gyms-open
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: time
 components:
   schemas: {}
