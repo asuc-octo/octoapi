@@ -58,7 +58,7 @@ paths:
                   dining-halls:
                     type: array
                     items:
-                      $ref: ''
+                      $ref: '#/components/schemas/Dining-Hall'
               examples:
                 example-1:
                   value:
@@ -122,7 +122,7 @@ paths:
 components:
   schemas:
     Dining-Hall:
-      title: Dining-Hall
+      title: dining-hall
       type: object
       x-examples:
         example-1:
