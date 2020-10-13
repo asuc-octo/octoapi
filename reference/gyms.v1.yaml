@@ -2,6 +2,7 @@ openapi: 3.0.0
 info:
   title: gyms
   version: '1.0'
+  description: API endpoint to retrieve all gym related requests
 servers:
   - url: 'http://localhost:3000'
 paths:
@@ -15,8 +16,8 @@ paths:
     get:
       summary: Get gym with id
       tags: []
-      responses: {}
       operationId: get-gyms-id
+      description: Retrieves the gym with the provided id
   /api/gyms/search:
     get:
       summary: Search for gym by name
@@ -29,6 +30,8 @@ paths:
           in: query
           name: name
           required: true
+          description: The name of the gym
+      description: Retrieves the gym whose name matches the search string
   /api/gyms/range:
     get:
       summary: Gets gyms within distance range
@@ -38,19 +41,25 @@ paths:
       parameters:
         - schema:
             type: number
+            format: double
           in: query
           name: latitude
           required: true
         - schema:
             type: number
+            format: double
           in: query
           name: longitude
           required: true
         - schema:
             type: number
+            format: double
+            exclusiveMinimum: true
           in: query
           name: radius
           required: true
+          description: 'Radius away from (latitude, longitude) in miles'
+      description: Retrieves the gyms that are at most `radius` miles away from the `latitude` and `longitude` position
   /api/gyms/open:
     get:
       summary: Gyms open at time
@@ -60,13 +69,17 @@ paths:
       parameters:
         - schema:
             type: integer
+            format: int64
           in: query
           name: time
+          description: A Unix Timestamp
+      description: Retrieves the gyms that are open now (default) or at the provided timestamp
   /api/gyms:
     get:
       summary: Gets all gyms
       tags: []
       responses: {}
       operationId: get-api-gyms
+      description: Retrieves all gyms
 components:
   schemas: {}
