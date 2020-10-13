@@ -11,5 +11,6 @@ paths:
       tags: []
       responses: {}
       operationId: get-api-weather
+      description: 'Get the weather for Berkeley, CA'
 components:
   schemas: {}
