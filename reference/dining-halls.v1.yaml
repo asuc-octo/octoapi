@@ -2,8 +2,148 @@ openapi: '3.0.0'
 info:
   title: dining-halls
   version: '1.0'
+  description: API endpoint to retrieve all dining-hall related requests
+  license:
+    name: MIT
 servers:
-- url: http://localhost:3000
-paths: {}
+  - url: 'http://localhost:3000'
+paths:
+  /api/dining:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dining-halls:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dining-Hall'
+              examples:
+                example-1:
+                  value:
+                    dining-halls:
+                      - name: Cafe 3
+                        description: not that good
+                        latitude: 37.867157
+                        longitude: -122.26036699999999
+                        address: '2436 Durant Ave, Berkeley, CA 94704'
+                        picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
+                        phone: ''
+      operationId: get-api-dining-halls
+      description: returns all dining hall data
+    parameters: []
+  /api/dining/search:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+      description: Search for dining halls with name name
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dining-halls:
+                    type: array
+                    items:
+                      $ref: ''
+              examples:
+                example-1:
+                  value:
+                    dining-halls:
+                      - name: Cafe 3
+                        description: not that good
+                        latitude: 37.867157
+                        longitude: -122.26036699999999
+                        address: '2436 Durant Ave, Berkeley, CA 94704'
+                        picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
+                        phone: ''
+    parameters: []
+  /api/dining/range:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dining-halls:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dining-Hall'
+              examples:
+                example-1:
+                  value:
+                    dining-halls:
+                      - name: Cafe 3
+                        description: not that good
+                        latitude: 37.867157
+                        longitude: -122.26036699999999
+                        address: '2436 Durant Ave, Berkeley, CA 94704'
+                        picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
+                        phone: ''
+      operationId: get-api-dining-range
+      description: Return dining halls in the location range
+      parameters:
+        - schema:
+            type: number
+          in: query
+          name: latitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: longitude
+          required: true
+        - schema:
+            type: integer
+          in: query
+          name: distance
+          description: in km
+          required: true
 components:
-  schemas: {}
+  schemas:
+    Dining-Hall:
+      title: Dining-Hall
+      type: object
+      x-examples:
+        example-1:
+          name: Cafe 3
+          description: not that good
+          latitude: 37.867157
+          longitude: -122.26036699999999
+          address: '2436 Durant Ave, Berkeley, CA 94704'
+          picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
+          phone: null
+      description: Dining Hall Model
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: string
+        picture:
+          type: string
+        phone:
+          type: string
