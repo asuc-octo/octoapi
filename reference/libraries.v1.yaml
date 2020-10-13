@@ -1,9 +1,86 @@
-openapi: '3.0.0'
+openapi: 3.0.0
 info:
   title: libraries
   version: '1.0'
+  description: API endpoint to retrieve all library related requests
 servers:
-- url: http://localhost:3000
-paths: {}
+  - url: 'http://localhost:3000'
+paths:
+  /api/libraries:
+    get:
+      summary: Gets the Libraries
+      tags: []
+      responses: {}
+      operationId: get-api-libraries
+      description: Retrieves all libraries
+  '/api/libraries/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+    get:
+      summary: Gets library with id
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-id
+      description: Retrieves the gym with the provided id
+  /api/libraries/search:
+    get:
+      summary: Search for library by name
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-search
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+          description: The name of the library
+      description: Retrieves the library whose name matches the search string
+  /api/libraries/range:
+    get:
+      summary: Gets libraries within distance range
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-range
+      parameters:
+        - schema:
+            type: number
+            format: double
+          in: query
+          name: latitude
+          required: true
+        - schema:
+            type: number
+            format: double
+          in: query
+          name: longitude
+          required: true
+        - schema:
+            type: number
+            format: double
+            exclusiveMinimum: true
+          in: query
+          name: radius
+          required: true
+          description: 'Radius away from (latitude, longitude) in miles'
+      description: Retrieves the libraries that are at most `radius` miles away from the `latitude` and `longitude` position
+  /api/libraries/open:
+    get:
+      summary: Libraries open at time
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-open
+      parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: time
+          description: A Unix Timestamp
+      description: Retrieves the libraries that are open now (default) or at the provided timestamp
 components:
   schemas: {}

@@ -1,9 +1,16 @@
-openapi: '3.0.0'
+openapi: 3.0.0
 info:
   title: weather
   version: '1.0'
 servers:
-- url: http://localhost:3000
-paths: {}
+  - url: 'http://localhost:3000'
+paths:
+  /api/weather:
+    get:
+      summary: Gets the weather for Berkeley
+      tags: []
+      responses: {}
+      operationId: get-api-weather
+      description: 'Get the weather for Berkeley, CA'
 components:
   schemas: {}
