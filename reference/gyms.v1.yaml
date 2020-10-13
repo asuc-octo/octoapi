@@ -5,12 +5,38 @@ info:
 servers:
   - url: 'http://localhost:3000'
 paths:
-  /api/gyms:
+  /api/gyms/:
     get:
-      summary: Get all gyms
+      summary: Get all gyms (with name)
       tags:
         - gyms
       responses: {}
       operationId: get-api-gyms
+      parameters: []
+    parameters: []
+  '/api/gyms/{id}':
+    parameters:
+      - schema:
+          type: number
+        name: id
+        in: path
+        required: true
+    get:
+      summary: Get gym with id
+      tags: []
+      responses: {}
+      operationId: get-gyms-id
+  /api/gyms/search:
+    get:
+      summary: Search for gym by name
+      tags: []
+      responses: {}
+      operationId: get-api-gyms-search
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
 components:
   schemas: {}
