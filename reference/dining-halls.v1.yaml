@@ -10,7 +10,7 @@ servers:
 paths:
   /api/dining:
     get:
-      summary: Your GET endpoint
+      summary: Get all dining halls
       tags: []
       responses:
         '200':
@@ -71,10 +71,11 @@ paths:
                         picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
                         phone: ''
       operationId: /api/dining/search
+      summary: Search for dining halls by name
     parameters: []
   /api/dining/range:
     get:
-      summary: Your GET endpoint
+      summary: Search for dining halls within range
       tags: []
       responses:
         '200':
