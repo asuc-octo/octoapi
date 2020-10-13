@@ -18,6 +18,14 @@ paths:
       tags: []
       operationId: get-gyms-id
       description: Retrieves the gym with the provided id
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            examples: {}
   /api/gyms/search:
     get:
       summary: Search for gym by name
