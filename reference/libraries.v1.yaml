@@ -12,6 +12,7 @@ paths:
       tags: []
       responses: {}
       operationId: get-api-libraries
+      description: Retrieves all libraries
   '/api/libraries/{id}':
     parameters:
       - schema:
