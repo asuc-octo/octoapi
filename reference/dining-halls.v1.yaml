@@ -1,4 +1,4 @@
-openapi: '3.0.0'
+openapi: 3.0.0
 info:
   title: dining-halls
   version: '1.0'
@@ -10,7 +10,7 @@ servers:
 paths:
   /api/dining:
     get:
-      summary: Your GET endpoint
+      summary: Get all dining halls
       tags: []
       responses:
         '200':
@@ -35,7 +35,7 @@ paths:
                         address: '2436 Durant Ave, Berkeley, CA 94704'
                         picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
                         phone: ''
-      operationId: get-api-dining-halls
+      operationId: /api/dining
       description: returns all dining hall data
     parameters: []
   /api/dining/search:
@@ -70,10 +70,12 @@ paths:
                         address: '2436 Durant Ave, Berkeley, CA 94704'
                         picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
                         phone: ''
+      operationId: /api/dining/search
+      summary: Search for dining halls by name
     parameters: []
   /api/dining/range:
     get:
-      summary: Your GET endpoint
+      summary: Search for dining halls within range
       tags: []
       responses:
         '200':
@@ -98,7 +100,7 @@ paths:
                         address: '2436 Durant Ave, Berkeley, CA 94704'
                         picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
                         phone: ''
-      operationId: get-api-dining-range
+      operationId: /api/dining/range
       description: Return dining halls in the location range
       parameters:
         - schema:
