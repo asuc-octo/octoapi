@@ -1,9 +1,72 @@
-openapi: '3.0.0'
+openapi: 3.0.0
 info:
   title: libraries
   version: '1.0'
 servers:
-- url: http://localhost:3000
-paths: {}
+  - url: 'http://localhost:3000'
+paths:
+  /api/libraries:
+    get:
+      summary: Gets the Libraries
+      tags: []
+      responses: {}
+      operationId: get-api-libraries
+  '/api/libraries/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+    get:
+      summary: Gets library by id
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-id
+  /api/libraries/search:
+    get:
+      summary: Search for Library by Name
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-search
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+  /api/libraries/range:
+    get:
+      summary: Gets libraries within a radius from a location
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-range
+      parameters:
+        - schema:
+            type: number
+          in: query
+          name: latitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: longitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: radius
+          required: true
+  /api/libraries/open:
+    get:
+      summary: Gets libaries that are open at a given time
+      tags: []
+      responses: {}
+      operationId: get-api-libraries-open
+      parameters:
+        - schema:
+            type: number
+          in: query
+          name: time
 components:
   schemas: {}

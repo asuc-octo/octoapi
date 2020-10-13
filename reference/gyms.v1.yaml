@@ -5,15 +5,6 @@ info:
 servers:
   - url: 'http://localhost:3000'
 paths:
-  /api/gyms/:
-    get:
-      summary: Get all gyms (with name)
-      tags:
-        - gyms
-      responses: {}
-      operationId: get-api-gyms
-      parameters: []
-    parameters: []
   '/api/gyms/{id}':
     parameters:
       - schema:
@@ -71,5 +62,11 @@ paths:
             type: integer
           in: query
           name: time
+  /api/gyms:
+    get:
+      summary: Gets all gyms
+      tags: []
+      responses: {}
+      operationId: get-api-gyms
 components:
   schemas: {}
