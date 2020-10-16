@@ -33,6 +33,7 @@ paths:
                     latitude: 37.8685702
                     longitude: -122.2627233
                     phone: 510-642-5072
+                    address: '2301 Bancroft Way, Berkeley, CA 94720'
                     description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
                     open_close_array:
                       - open_time: 1583654400
@@ -77,6 +78,7 @@ paths:
                     latitude: 37.8685702
                     longitude: -122.2627233
                     phone: 510-642-5072
+                    address: '2301 Bancroft Way, Berkeley, CA 94720'
                     description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
                     open_close_array:
                       - open_time: 1583654400
@@ -129,6 +131,7 @@ paths:
                       latitude: 37.8685702
                       longitude: -122.2627233
                       phone: 510-642-5072
+                      address: '2301 Bancroft Way, Berkeley, CA 94720'
                       description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
                       open_close_array:
                         - open_time: 1583654400
@@ -195,6 +198,7 @@ paths:
                       latitude: 37.8685702
                       longitude: -122.2627233
                       phone: 510-642-5072
+                      address: '2301 Bancroft Way, Berkeley, CA 94720'
                       description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
                       open_close_array:
                         - open_time: 1583654400
@@ -241,36 +245,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/gym-model'
-              examples:
-                example-1:
-                  value:
-                    - id: string
-                      name: RSF
-                      latitude: 37.8685702
-                      longitude: -122.2627233
-                      phone: 510-642-5072
-                      description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
-                      open_close_array:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      track_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      pool_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
+              examples: {}
 components:
   schemas:
     gym-model:
@@ -283,6 +258,7 @@ components:
           latitude: 37.8685702
           longitude: -122.2627233
           phone: 510-642-5072
+          address: '2301 Bancroft Way, Berkeley, CA 94720'
           description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
           open_close_array:
             - open_time: 1583654400
@@ -355,3 +331,12 @@ components:
               close_time:
                 type: integer
                 format: int64
+      required:
+        - name
+        - latitude
+        - longitude
+        - address
+        - open_close_array
+        - track_hours
+        - pool_hours
+      description: ''
