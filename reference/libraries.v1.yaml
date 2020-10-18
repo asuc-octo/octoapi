@@ -8,11 +8,19 @@ servers:
 paths:
   /api/libraries:
     get:
-      summary: Gets the Libraries
+      summary: Library List
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/library-model'
       operationId: get-api-libraries
-      description: Retrieves all libraries
+      description: Retrieve all libraries
   '/api/libraries/{id}':
     parameters:
       - schema:
@@ -21,16 +29,35 @@ paths:
         in: path
         required: true
     get:
-      summary: Gets library with id
+      summary: Library Retrieve
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/library-model'
       operationId: get-api-libraries-id
       description: Retrieves the gym with the provided id
   /api/libraries/search:
     get:
-      summary: Search for library by name
+      summary: Library Search
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  '':
+                    type:
+                      - string
+                      - array
+                    items:
+                      $ref: '#/components/schemas/library-model'
       operationId: get-api-libraries-search
       parameters:
         - schema:
@@ -44,7 +71,15 @@ paths:
     get:
       summary: Gets libraries within distance range
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/library-model'
       operationId: get-api-libraries-range
       parameters:
         - schema:
@@ -67,12 +102,20 @@ paths:
           name: radius
           required: true
           description: 'Radius away from (latitude, longitude) in miles'
-      description: Retrieves the libraries that are at most `radius` miles away from the `latitude` and `longitude` position
+      description: Retrieves the libraries that are at most `radius` kms away from the `latitude` and `longitude` position
   /api/libraries/open:
     get:
       summary: Libraries open at time
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/library-model'
       operationId: get-api-libraries-open
       parameters:
         - schema:
@@ -83,4 +126,22 @@ paths:
           description: A Unix Timestamp
       description: Retrieves the libraries that are open now (default) or at the provided timestamp
 components:
-  schemas: {}
+  schemas:
+    library-model:
+      title: Library
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+        open_close_array:
+          type: array
+          items:
+            $ref: ./utils.v1.yaml#/components/schemas/open_close-model
