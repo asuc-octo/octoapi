@@ -8,7 +8,7 @@ import (
     "net/http"
     "context"
     "bytes"
-    "math"
+    //"math"
     "encoding/json"
     "google.golang.org/api/iterator"
     "cloud.google.com/go/firestore"
@@ -48,32 +48,14 @@ func GymEndpoint(w http.ResponseWriter, r *http.Request) {
     }
     client, ctx := initFirestore(w);
 
-    if input.Name != "" {
+    if input.Name != "" { // Search by name
         gym := getGymByName(w, client, ctx, html.EscapeString(input.Name))
         if gym.Name == input.Name {
            fmt.Fprint(w, gym)
         }
-    } else {
-    
-        switch input.Unit {
-            case "ft":
-                fmt.Fprint(w, (unit.Length(input.Radius) * unit.Foot).Meters())
-                fmt.Fprint(w, getGymsInRadius(w, client, ctx, input.Longitude, input.Latitude, (unit.Length(input.Radius) * unit.Foot).Kilometers()))
-            case "yd":
-                fmt.Fprint(w, (unit.Length(input.Radius) * unit.Yard).Meters())
-                fmt.Fprint(w, getGymsInRadius(w, client, ctx, input.Longitude, input.Latitude, (unit.Length(input.Radius) * unit.Yard).Kilometers()))
-            case "mi":
-                fmt.Fprint(w, (unit.Length(input.Radius) * unit.Mile).Meters())
-                fmt.Fprint(w, getGymsInRadius(w, client, ctx, input.Longitude, input.Latitude, (unit.Length(input.Radius) * unit.Mile).Kilometers()))
-            case "m":
-                fmt.Fprint(w, (unit.Length(input.Radius) * unit.Meter).Meters())
-                fmt.Fprint(w, getGymsInRadius(w, client, ctx, input.Longitude, input.Latitude, (unit.Length(input.Radius) * unit.Meter).Kilometers()))
-            case "km":
-                fmt.Fprint(w, (unit.Length(input.Radius) * unit.Kilometer).Meters())
-                fmt.Fprint(w, getGymsInRadius(w, client, ctx, input.Longitude, input.Latitude, (unit.Length(input.Radius) * unit.Kilometer).Kilometers()))
-            default:
-        }
-        
+    } else { // Distance range
+        fmt.Fprint(w, convertToKilometers(input.Radius, input.Unit))
+        fmt.Fprint(w, getGymsInRadius(w, client, ctx, input.Longitude, input.Latitude, convertToKilometers(input.Radius, input.Unit)))
     }
     	
 
@@ -175,6 +157,22 @@ func getGymsInRadius(w http.ResponseWriter, client *firestore.Client, ctx contex
         }
     }
     return gyms
+}
+
+func convertToKilometers(value float64, units string) float64 {
+    switch units {
+        case "ft":
+            return (unit.Length(value) * unit.Foot).Kilometers()
+        case "yd":
+            return (unit.Length(value) * unit.Yard).Kilometers()
+        case "mi":
+            return (unit.Length(value) * unit.Mile).Kilometers()
+        case "m":
+            return (unit.Length(value) * unit.Meter).Kilometers()
+        case "km":
+            return (unit.Length(value) * unit.Kilometer).Kilometers()
+    }
+    return 0.0
 }
 /*
 
