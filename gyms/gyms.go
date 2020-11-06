@@ -14,8 +14,8 @@ import (
     "google.golang.org/api/option"
 )
 type Timing struct {
-    Open_Time int `json:"open_time"`
-    Close_Time int `json:"close_time"`
+    Open_Time int64 `json:"open_time"`
+    Close_Time int64 `json:"close_time"`
 }
 
 type Gym struct {
@@ -28,12 +28,11 @@ type Gym struct {
     Track_Hours []Timing `json:"track_hours"`
     Pool_Hours []Timing `json:"pool_hours"`
 }
-type Gyms []Gym
 
 // HelloWorld prints the JSON encoded "message" field in the body
 // of the request or "Hello, World!" if there isn't one.
 func GymEndpoint(w http.ResponseWriter, r *http.Request) {
-    client, ctx := initFirestore(w);
+    client, ctx := initFirestore(w)
     allGyms := getAllGyms(w, client, ctx)
     output, err := json.Marshal(&allGyms)
     if err != nil {
@@ -68,10 +67,10 @@ func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context) {
     }
     return client, ctx
 } 
-func getAllGyms(w http.ResponseWriter, client *firestore.Client, ctx context.Context) Gyms{
+func getAllGyms(w http.ResponseWriter, client *firestore.Client, ctx context.Context) []Gym{
     /* Read Documents from Firestore*/
     defer client.Close()
-    var gyms Gyms
+    var gyms = []Gym{}
     iter := client.Collection("Gyms").Documents(ctx)
     for {
         doc, err := iter.Next()

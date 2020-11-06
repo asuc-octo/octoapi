@@ -16,8 +16,8 @@ import (
     "github.com/gorilla/schema"
 )
 type Timing struct {
-    Open_Time int `json:"open_time"`
-    Close_Time int `json:"close_time"`
+    Open_Time int64 `json:"open_time"`
+    Close_Time int64 `json:"close_time"`
 }
 
 type Gym struct {
@@ -42,7 +42,7 @@ func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
         // Handle error
     }
     
-    client, ctx := initFirestore(w);
+    client, ctx := initFirestore(w)
 
     // Search by name
     gym := getGymByName(w, client, ctx, html.EscapeString(input.Name))
@@ -52,6 +52,7 @@ func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
             return
         }
         fmt.Fprint(w, string(output))
+        return
     }
 }
 func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context) {

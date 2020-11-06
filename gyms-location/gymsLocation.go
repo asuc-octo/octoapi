@@ -17,8 +17,8 @@ import (
     "github.com/gorilla/schema"
 )
 type Timing struct {
-    Open_Time int `json:"open_time"`
-    Close_Time int `json:"close_time"`
+    Open_Time int64 `json:"open_time"`
+    Close_Time int64 `json:"close_time"`
 }
 
 type Gym struct {
@@ -32,7 +32,6 @@ type Gym struct {
     Pool_Hours []Timing `json:"pool_hours"`
 }
 
-type Gyms []Gym
 var decoder = schema.NewDecoder()
 // HelloWorld prints the JSON encoded "message" field in the body
 // of the request or "Hello, World!" if there isn't one.
@@ -47,7 +46,7 @@ func GymLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         // Handle error
     }
-    client, ctx := initFirestore(w);
+    client, ctx := initFirestore(w)
 
     // Distance range
     //fmt.Fprint(w, convertToKilometers(input.Radius, input.Unit))
@@ -89,9 +88,9 @@ func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context) {
 } 
 
 // radius in meters
-func getGymsInRadius(w http.ResponseWriter, client *firestore.Client, ctx context.Context, longitude float64, latitude float64, radius float64) Gyms{
+func getGymsInRadius(w http.ResponseWriter, client *firestore.Client, ctx context.Context, longitude float64, latitude float64, radius float64) []Gym{
     defer client.Close()
-    var gyms Gyms
+    var gyms = []Gym{}
     iter := client.Collection("Gyms").Documents(ctx)
     for {
         doc, err := iter.Next()
