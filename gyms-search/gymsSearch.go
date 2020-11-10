@@ -15,104 +15,109 @@ import (
     "google.golang.org/api/option"
     "github.com/gorilla/schema"
 )
-type Timing struct {
-    Open_Time int64 `json:"open_time"`
-    Close_Time int64 `json:"close_time"`
-}
+// type Timing struct {
+//     Open_Time int64 `json:"open_time"`
+//     Close_Time int64 `json:"close_time"`
+// }
 
-type Gym struct {
-    Name string `json:"name"`
-    Latitude float64 `json:"latitude"`
-    Longitude float64 `json:"longitude"`
-    Phone string `json:"phone"`
-    Description string `json:"description"`
-    Open_Close_Hours []Timing `json:"open_close_hours"`
-    Track_Hours []Timing `json:"track_hours"`
-    Pool_Hours []Timing `json:"pool_hours"`
-}
+// type Gym struct {
+//     Name string `json:"name"`
+//     Latitude float64 `json:"latitude"`
+//     Longitude float64 `json:"longitude"`
+//     Phone string `json:"phone"`
+//     Description string `json:"description"`
+//     Open_Close_Hours []Timing `json:"open_close_hours"`
+//     Track_Hours []Timing `json:"track_hours"`
+//     Pool_Hours []Timing `json:"pool_hours"`
+// }
 var decoder = schema.NewDecoder()
-// HelloWorld prints the JSON encoded "message" field in the body
-// of the request or "Hello, World!" if there isn't one.
-func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
-    var input struct {
-        Name string `json:"name"`
-    }
-    err := decoder.Decode(&input, r.URL.Query())
-    if err != nil {
-        // Handle error
-    }
-    
-    client, ctx := initFirestore(w)
+var client *firestore.Client
+var ctx context.Context
+var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_hours", "track_hours", "pool_hours"}
 
-    // Search by name
-    gym := getGymByName(w, client, ctx, html.EscapeString(input.Name))
-    if input.Name != "" && gym.Name == input.Name {
-        output, err := json.Marshal(&gym)
-        if err != nil {
-            return
-        }
-        w.Header().Set("Content-Type", "application/json")
-        fmt.Fprint(w, string(output))
+func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    name, ok := r.URL.Query()["name"]
+    if !ok || len(name[0]) < 1 {
+        http.Error(w, "Url Param 'name' is missing", http.StatusBadRequest)
         return
     }
+    err := initFirestore(w)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    // Search by name
+    var output []byte
+    var gym map[string]interface{}
+    gym, err = getGymByName(w, html.EscapeString(name[0]))
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    output, err = json.Marshal(&gym)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    fmt.Fprint(w, string(output))
+    return
 }
-func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context) {
-    ctx := context.Background()
+func initFirestore(w http.ResponseWriter)  error {
+    ctx = context.Background()
 
     /* Get Auth for accessing Firestore by getting json file in cloud storage*/
-    storageClient, err := storage.NewClient(ctx)
-    if err != nil {
+    storageClient, storageError := storage.NewClient(ctx)
+    if storageError != nil {
         fmt.Fprint(w, "storage client failed\n")
+        return storageError
     }
     defer storageClient.Close()
     bkt := storageClient.Bucket("firestore_access")
     obj := bkt.Object("berkeley-mobile-e0922919475f.json")
-    read, err1 := obj.NewReader(ctx)
-    if err1 != nil {
+    read, readerError := obj.NewReader(ctx)
+    if readerError != nil {
         fmt.Fprint(w, "Reader failed!\n")
+        return readerError
     }
     defer read.Close()
     json_input := StreamToByte(read) // the byte array of the json file
 
-
     /* Load Firestore */
+    var clientErr error
     opt := option.WithCredentialsJSON(json_input)
-    client, new_err := firestore.NewClient(ctx, "berkeley-mobile", opt)
-    if new_err != nil {
+    client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt)
+    if clientErr != nil {
         fmt.Fprint(w, "client failed\n")
+        return clientErr
     }
-    return client, ctx
+    return nil
 } 
-func getGymByName(w http.ResponseWriter, client *firestore.Client, ctx context.Context, name string) Gym{
+func getGymByName(w http.ResponseWriter, name string) (map[string]interface{}, error){
     /* Read Documents from Firestore*/
     defer client.Close()
-    var gym Gym
+    var gym map[string]interface{}    
     iter := client.Collection("Gyms").Where("name", "==", name).Documents(ctx)
     doc, err := iter.Next()
     if err == iterator.Done {
-        return gym
+        return nil, nil
     }
     if err != nil {
         fmt.Println(err)
-        return gym
+        return nil, err
     }
     
-    if err := doc.DataTo(&gym); err != nil  {
-        fmt.Println(err)
-        return gym
+    docData := doc.Data()
+    gym = make(map[string]interface{})
+    for _, element := range GymFields {
+        gym[element] = docData[element]
     }
-    return gym
+    return gym, nil
 }
 
 func StreamToByte(stream io.Reader) []byte {
-  buf := new(bytes.Buffer)
+    buf := new(bytes.Buffer)
 	buf.ReadFrom(stream)
 	return buf.Bytes()
-}
-
-func StreamToString(stream io.Reader) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.String()
 }
 

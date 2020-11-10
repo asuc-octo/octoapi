@@ -13,65 +13,80 @@ import (
     "cloud.google.com/go/storage"
     "google.golang.org/api/option"
 )
-type Timing struct {
-    Open_Time int64 `json:"open_time"`
-    Close_Time int64 `json:"close_time"`
-}
+// type Timing struct {
+//     Open_Time int64 `json:"open_time"`
+//     Close_Time int64 `json:"close_time"`
+// }
 
-type Gym struct {
-    Name string `json:"name"`
-    Latitude float64 `json:"latitude"`
-    Longitude float64 `json:"longitude"`
-    Phone string `json:"phone"`
-    Description string `json:"description"`
-    Open_Close_Hours []Timing `json:"open_close_hours"`
-    Track_Hours []Timing `json:"track_hours"`
-    Pool_Hours []Timing `json:"pool_hours"`
-}
+// type Gym struct {
+//     Name string `json:"name"`
+//     Latitude float64 `json:"latitude"`
+//     Longitude float64 `json:"longitude"`
+//     Phone string `json:"phone"`
+//     Description string `json:"description"`
+//     Open_Close_Hours []Timing `json:"open_close_hours"`
+//     Track_Hours []Timing `json:"track_hours"`
+//     Pool_Hours []Timing `json:"pool_hours"`
+// }
+var client *firestore.Client
+var ctx context.Context
+var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_hours", "track_hours", "pool_hours"}
 
-// HelloWorld prints the JSON encoded "message" field in the body
-// of the request or "Hello, World!" if there isn't one.
 func GymEndpoint(w http.ResponseWriter, r *http.Request) {
-    client, ctx := initFirestore(w)
-    allGyms := getAllGyms(w, client, ctx)
-    output, err := json.Marshal(&allGyms)
+    w.Header().Set("Content-Type", "application/json")
+    err := initFirestore(w)
     if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    w.Header().Set("Content-Type", "application/json")
+    var output []byte
+    var allGyms []map[string]interface{}
+    allGyms, err = getAllGyms(w)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    output, err = json.Marshal(allGyms)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
     fmt.Fprint(w, string(output))
 }
-func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context) {
-    ctx := context.Background()
+func initFirestore(w http.ResponseWriter)  error {
+    ctx = context.Background()
 
     /* Get Auth for accessing Firestore by getting json file in cloud storage*/
-    storageClient, err := storage.NewClient(ctx)
-    if err != nil {
+    storageClient, storageError := storage.NewClient(ctx)
+    if storageError != nil {
         fmt.Fprint(w, "storage client failed\n")
+        return storageError
     }
     defer storageClient.Close()
     bkt := storageClient.Bucket("firestore_access")
     obj := bkt.Object("berkeley-mobile-e0922919475f.json")
-    read, err1 := obj.NewReader(ctx)
-    if err1 != nil {
+    read, readerError := obj.NewReader(ctx)
+    if readerError != nil {
         fmt.Fprint(w, "Reader failed!\n")
+        return readerError
     }
     defer read.Close()
     json_input := StreamToByte(read) // the byte array of the json file
 
-
     /* Load Firestore */
+    var clientErr error
     opt := option.WithCredentialsJSON(json_input)
-    client, new_err := firestore.NewClient(ctx, "berkeley-mobile", opt)
-    if new_err != nil {
+    client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt)
+    if clientErr != nil {
         fmt.Fprint(w, "client failed\n")
+        return clientErr
     }
-    return client, ctx
+    return nil
 } 
-func getAllGyms(w http.ResponseWriter, client *firestore.Client, ctx context.Context) []Gym{
+func getAllGyms(w http.ResponseWriter) ([]map[string]interface{}, error) {
     /* Read Documents from Firestore*/
     defer client.Close()
-    var gyms = []Gym{}
+    var gyms []map[string]interface{}
     iter := client.Collection("Gyms").Documents(ctx)
     for {
         doc, err := iter.Next()
@@ -80,27 +95,21 @@ func getAllGyms(w http.ResponseWriter, client *firestore.Client, ctx context.Con
         }
         if err != nil {
             fmt.Println(err)
-            return gyms
+            return nil, err
         }
-        var gym Gym
-        if err := doc.DataTo(&gym); err != nil  {
-            fmt.Println(err)
+        docData := doc.Data()
+        gym := make(map[string]interface{})
+        for _, element := range GymFields {
+            gym[element] = docData[element]
         }
         gyms = append(gyms, gym)
     }
-    //fmt.Fprintf("len=%d cap=%d %v\n", len(gyms), cap(gyms), gyms)
-    return gyms
+    return gyms, nil
 }
 
 func StreamToByte(stream io.Reader) []byte {
     buf := new(bytes.Buffer)
 	buf.ReadFrom(stream)
 	return buf.Bytes()
-}
-
-func StreamToString(stream io.Reader) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.String()
 }
 
