@@ -56,6 +56,7 @@ func GymOpenEndpoint(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         return
     }
+    w.Header().Set("Content-Type", "application/json")
     fmt.Fprint(w, string(output))
     	
 

@@ -38,6 +38,7 @@ func GymEndpoint(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         return
     }
+    w.Header().Set("Content-Type", "application/json")
     fmt.Fprint(w, string(output))
 }
 func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context) {
