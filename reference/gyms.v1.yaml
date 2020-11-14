@@ -229,7 +229,7 @@ paths:
           in: query
           name: time
           description: A Unix Timestamp
-      description: Retrieves the gyms that are open now (default) or at the provided timestamp
+      description: Retrieves the gyms that are open now (default) or at the provided timestamp.
   /api/gyms:
     get:
       summary: Gets all gyms
