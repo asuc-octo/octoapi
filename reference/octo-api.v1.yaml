@@ -2404,7 +2404,7 @@ paths:
       tags:
         - campus resources
       x-google-backend:
-        address: 'https://us-central1-api-team-292919.cloudfunctions.net/resources-by-range'
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/resource-by-range'
   /api/resources/search:
     get:
       description: Retrieves the campus resources whose name matches the search string
