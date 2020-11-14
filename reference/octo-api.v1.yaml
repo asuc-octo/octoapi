@@ -142,6 +142,101 @@ definitions:
           - close_time: 1605427140
             notes: ''
             open_time: 1605340800
+  dining-hall-model:
+    description: ''
+    type: object
+    x-examples:
+      example-1:
+        address: '2436 Durant Ave, Berkeley, CA 94704'
+        Description: null
+        Latitude: 37.867157
+        Longitude: -122.26036699999999
+        name: Cafe 3
+        phone: null
+    properties:
+      address:
+        type: string
+        minLength: 1
+      description:
+        type:
+          - string
+          - 'null'
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+        minLength: 1
+      phone:
+        type:
+          - string
+          - 'null'
+    required:
+      - address
+      - latitude
+      - longitude
+      - name
+  resource-model:
+    description: ''
+    type: object
+    properties:
+      address:
+        type: string
+        minLength: 1
+      by_appointment:
+        type: boolean
+      category:
+        type: string
+        minLength: 1
+      description:
+        type: string
+        minLength: 1
+      email:
+        type: string
+        minLength: 1
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+        minLength: 1
+      on_campus:
+        type: boolean
+      open_close_array:
+        $ref: '#/definitions/open_close-model'
+      phone:
+        type: string
+        minLength: 1
+    required:
+      - address
+      - by_appointment
+      - category
+      - description
+      - email
+      - latitude
+      - longitude
+      - name
+      - on_campus
+      - open_close_array
+      - phone
+    x-examples:
+      example-1:
+        address: '2610 Channing Way, Berkeley, CA 94704'
+        by_appointment: false
+        category: Campus Resource
+        description: 'Cal Dining has partnered with RePlate to donate overproduced food to people in need. '
+        email: 'http://caldining.berkeley.edu/sustainability/waste-reduction'
+        latitude: 37.8670799
+        longitude: -122.25786480000001
+        name: Cal Dining Food Recovery
+        on_campus: true
+        open_close_array:
+          - close_time: 1604822400
+            notes: ''
+            open_time: 1604822400
+        phone: Not Available
 host: 'localhost:3000'
 info:
   contact:
@@ -624,6 +719,131 @@ paths:
         - libraries
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/libraries-search'
+  /api/dining:
+    get:
+      description: Retrieves all dining halls
+      operationId: get-api-dining
+      parameters: []
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dining-hall-model'
+            type: array
+          examples:
+            example-1:
+              - address: '2415 Bowditch St, Berkeley, CA 94720'
+                description: null
+                latitude: 37.8669091
+                longitude: -122.256178
+                name: Crossroads
+                phone: null
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get all dining halls
+      tags:
+        - dining halls
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/dining'
+  /api/dining/range:
+    get:
+      description: Retrieves the dining halls that are at most `radius` `unit` distance away from the `latitude` and `longitude` position
+      operationId: get-api-dining-range
+      parameters:
+        - format: double
+          in: query
+          name: latitude
+          required: true
+          type: number
+        - format: double
+          in: query
+          name: longitude
+          required: true
+          type: number
+        - description: 'Radius away from (latitude, longitude) in `unit`'
+          exclusiveMinimum: true
+          format: double
+          in: query
+          name: radius
+          required: true
+          type: number
+        - description: ''
+          enum:
+            - ft
+            - yd
+            - mi
+            - m
+            - km
+          in: query
+          name: unit
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dining-hall-model'
+            type: array
+          examples:
+            example-1:
+              - address: '2415 Bowditch St, Berkeley, CA 94720'
+                description: null
+                latitude: 37.8669091
+                longitude: -122.256178
+                name: Crossroads
+                phone: null
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get dining halls within distance range
+      tags:
+        - dining halls
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/dining-location'
+  /api/dining/search:
+    get:
+      description: Retrieves the dining hall whose name matches the search string
+      operationId: get-api-dining-search
+      parameters:
+        - description: The name of the dining hall
+          in: query
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/json
+        - application/xml
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/dining-hall-model'
+          examples:
+            example-1:
+              address: '2415 Bowditch St, Berkeley, CA 94720'
+              description: null
+              latitude: 37.8669091
+              longitude: -122.256178
+              name: Crossroads
+              phone: null
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get library by name
+      tags:
+        - dining halls
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/dining-search'
 schemes:
   - http
 swagger: '2.0'
@@ -632,4 +852,6 @@ tags:
     name: gyms
   - description: Basic information of all libraries in our catalog
     name: libraries
+  - description: Basic information of all dining halls in our catalog
+    name: dining halls
 x-components: {}
