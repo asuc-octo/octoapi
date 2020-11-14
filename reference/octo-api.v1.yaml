@@ -18,6 +18,8 @@ paths:
         - gyms
       operationId: get-api-gyms
       description: Retrieves all gyms
+      x-google-backend:
+        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms
       responses:
         '200':
           description: OK
@@ -63,6 +65,8 @@ paths:
       summary: Gets gym by name
       tags:
         - gyms
+      x-google-backend:
+        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms-search
       responses:
         '200':
           description: OK
@@ -123,6 +127,8 @@ paths:
       summary: Gets gyms within distance range
       tags:
         - gyms
+      x-google-backend:
+        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms-location
       responses:
         '200':
           description: OK
@@ -203,6 +209,8 @@ paths:
       summary: Gets gyms open at given time
       tags:
         - gyms
+      x-google-backend:
+        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms-open
       responses:
         '200':
           description: OK
@@ -336,10 +344,3 @@ components:
             type: integer
           notes:
             type: string
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: query
-      name: key
-security:
-  - ApiKeyAuth: []
