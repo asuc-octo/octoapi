@@ -1,346 +1,230 @@
-openapi: 3.0.0
+basePath: /
+definitions:
+  gym-model:
+    description: ''
+    properties:
+      address:
+        type: string
+      description:
+        type: string
+      latitude:
+        format: double
+        type: number
+      longitude:
+        format: double
+        type: number
+      name:
+        type: string
+      open_close_array:
+        $ref: '#/definitions/open_close-model'
+      phone:
+        type: string
+      pool_hours:
+        $ref: '#/definitions/open_close-model'
+      track_hours:
+        $ref: '#/definitions/open_close-model'
+    required:
+      - name
+      - latitude
+      - longitude
+      - phone
+      - description
+      - address
+      - open_close_array
+      - track_hours
+      - pool_hours
+    title: gym-model
+    type: object
+    x-examples:
+      example-1:
+        address: '2301 Bancroft Way, Berkeley, CA 94720'
+        description: >-
+          The Recreational Sports Facility (RSF) is the University’s largest,
+          most complete fitness center with over 100,000 square feet of activity
+          space, including an Olympic-sized swimming pool, 3 weight rooms, seven
+          basketball courts, seven racquetball/handball courts, six squash
+          courts, treadmills, elliptical trainers, stairmasters, rowing machines
+          and stationary bikes.
+        latitude: 37.8685702
+        longitude: -122.2627233
+        name: RSF
+        open_close_array:
+          - close_time: 1583737140
+            notes: ''
+            open_time: 1583654400
+          - close_time: 1583823540
+            notes: ''
+            open_time: 1583737200
+        phone: 510-642-5072
+        pool_hours:
+          - close_time: 1583737140
+            notes: ''
+            open_time: 1583654400
+          - close_time: 1583823540
+            notes: ''
+            open_time: 1583737200
+        track_hours:
+          - close_time: 1583737140
+            notes: ''
+            open_time: 1583654400
+          - close_time: 1583823540
+            notes: ''
+            open_time: 1583737200
+  open_close-model:
+    description: >-
+      The `open_time` and `close_time` values are both UNIX timestamps. There
+      will be a list of 7 `open_close` items (Sunday to Saturday) that will have
+      updated open and close timestamps for the week.
+    items:
+      properties:
+        close_time:
+          type: integer
+        notes:
+          type: string
+        open_time:
+          type: integer
+      type: object
+    title: open_close-model
+    type: array
+    x-examples:
+      example-1:
+        close_time: 1597561200
+        notes: closed
+        open_time: 1597561200
+host: 'localhost:3000'
 info:
-  title: OCTO API
-  version: '1.0'
-  description: ' The OCTO API is a resource for student developers at Berkeley to have access to the same data that backs Berkeley Mobile, for the purpose of supporting student created applications. Please use this free resource fairly by not unnecessarily spamming the API and crediting Berkeley Mobile as the source. We do not provide guarantees about the correctness of the data, but we do try to maintain it to the best of our abilities.'
   contact:
     email: octo.api@asuc.org
-servers:
-  - url: 'http://localhost:3000'
-tags:
-  - name: gyms
-    description: Basic information of all gyms in our catalog
+  description: ' The OCTO API is a resource for student developers at Berkeley to have access to the same data that backs Berkeley Mobile, for the purpose of supporting student created applications. Please use this free resource fairly by not unnecessarily spamming the API and crediting Berkeley Mobile as the source. We do not provide guarantees about the correctness of the data, but we do try to maintain it to the best of our abilities.'
+  title: OCTO API
+  version: '1.0'
 paths:
   /api/gyms:
     get:
+      description: Retrieves all gyms
+      operationId: get-api-gyms
+      parameters: []
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gym-model'
+            type: array
       summary: Gets all gyms
       tags:
         - gyms
-      operationId: get-api-gyms
-      description: Retrieves all gyms
       x-google-backend:
-        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/gym-model'
-              examples:
-                example-1:
-                  value:
-                    - id: string
-                      name: RSF
-                      latitude: 37.8685702
-                      longitude: -122.2627233
-                      phone: 510-642-5072
-                      address: '2301 Bancroft Way, Berkeley, CA 94720'
-                      description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
-                      open_close_array:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      track_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      pool_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-  /api/gyms/search:
-    get:
-      summary: Gets gym by name
-      tags:
-        - gyms
-      x-google-backend:
-        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms-search
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/gym-model'
-              examples:
-                example-1:
-                  value:
-                    id: string
-                    name: RSF
-                    latitude: 37.8685702
-                    longitude: -122.2627233
-                    phone: 510-642-5072
-                    address: '2301 Bancroft Way, Berkeley, CA 94720'
-                    description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
-                    open_close_array:
-                      - open_time: 1583654400
-                        close_time: 1583737140
-                        notes: ''
-                      - open_time: 1583737200
-                        close_time: 1583823540
-                        notes: ''
-                    track_hours:
-                      - open_time: 1583654400
-                        close_time: 1583737140
-                        notes: ''
-                      - open_time: 1583737200
-                        close_time: 1583823540
-                        notes: ''
-                    pool_hours:
-                      - open_time: 1583654400
-                        close_time: 1583737140
-                        notes: ''
-                      - open_time: 1583737200
-                        close_time: 1583823540
-                        notes: ''
-            application/xml:
-              schema:
-                type: object
-                properties: {}
-        '400':
-          description: Bad Request
-        '500':
-          description: Internal Server Error
-      operationId: get-api-gyms-search
-      parameters:
-        - schema:
-            type: string
-          in: query
-          name: name
-          required: true
-          description: The name of the gym
-      description: Retrieves the gym whose name matches the search string
-  /api/gyms/range:
-    get:
-      summary: Gets gyms within distance range
-      tags:
-        - gyms
-      x-google-backend:
-        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms-location
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/gym-model'
-              examples:
-                example-1:
-                  value:
-                    - id: string
-                      name: RSF
-                      latitude: 37.8685702
-                      longitude: -122.2627233
-                      phone: 510-642-5072
-                      address: '2301 Bancroft Way, Berkeley, CA 94720'
-                      description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
-                      open_close_array:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      track_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      pool_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-      operationId: get-api-gyms-range
-      parameters:
-        - schema:
-            type: number
-            format: double
-          in: query
-          name: latitude
-          required: true
-        - schema:
-            type: number
-            format: double
-          in: query
-          name: longitude
-          required: true
-        - schema:
-            type: number
-            format: double
-            exclusiveMinimum: true
-          in: query
-          name: radius
-          required: true
-          description: 'Radius away from (latitude, longitude) in `unit`'
-        - schema:
-            type: string
-            enum:
-              - ft
-              - yd
-              - mi
-              - m
-              - km
-          in: query
-          name: unit
-          description: ''
-          required: true
-      description: Retrieves the gyms that are at most `radius` `unit` distance away from the `latitude` and `longitude` position
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms'
   /api/gyms/open:
     get:
+      description: >-
+        Retrieves the gyms that are open now (default) or at the provided UNIX
+        timestamp
+      operationId: get-api-gyms-open
+      parameters:
+        - description: A Unix Timestamp
+          format: int64
+          in: query
+          name: time
+          type: integer
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gym-model'
+            type: array
       summary: Gets gyms open at given time
       tags:
         - gyms
       x-google-backend:
-        address: https://us-central1-api-team-292919.cloudfunctions.net/gyms-open
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms-open'
+  /api/gyms/range:
+    get:
+      description: >-
+        Retrieves the gyms that are at most `radius` `unit` distance away from
+        the `latitude` and `longitude` position
+      operationId: get-api-gyms-range
+      parameters:
+        - format: double
+          in: query
+          name: latitude
+          required: true
+          type: number
+        - format: double
+          in: query
+          name: longitude
+          required: true
+          type: number
+        - description: 'Radius away from (latitude, longitude) in `unit`'
+          exclusiveMinimum: true
+          format: double
+          in: query
+          name: radius
+          required: true
+          type: number
+        - description: ''
+          enum:
+            - ft
+            - yd
+            - mi
+            - m
+            - km
+          in: query
+          name: unit
+          required: true
+          type: string
+      produces:
+        - application/json
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/gym-model'
-              examples:
-                example-1:
-                  value:
-                    - id: string
-                      name: RSF
-                      latitude: 37.8685702
-                      longitude: -122.2627233
-                      phone: 510-642-5072
-                      address: '2301 Bancroft Way, Berkeley, CA 94720'
-                      description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
-                      open_close_array:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      track_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-                      pool_hours:
-                        - open_time: 1583654400
-                          close_time: 1583737140
-                          notes: ''
-                        - open_time: 1583737200
-                          close_time: 1583823540
-                          notes: ''
-      operationId: get-api-gyms-open
+          schema:
+            items:
+              $ref: '#/definitions/gym-model'
+            type: array
+      summary: Gets gyms within distance range
+      tags:
+        - gyms
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms-location'
+  /api/gyms/search:
+    get:
+      description: Retrieves the gym whose name matches the search string
+      operationId: get-api-gyms-search
       parameters:
-        - schema:
-            type: integer
-            format: int64
+        - description: The name of the gym
           in: query
-          name: time
-          description: A Unix Timestamp
-      description: Retrieves the gyms that are open now (default) or at the provided UNIX timestamp
-components:
-  schemas:
-    gym-model:
-      title: gym-model
-      type: object
-      x-examples:
-        example-1:
-          name: RSF
-          latitude: 37.8685702
-          longitude: -122.2627233
-          phone: 510-642-5072
-          address: '2301 Bancroft Way, Berkeley, CA 94720'
-          description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
-          open_close_array:
-            - open_time: 1583654400
-              close_time: 1583737140
-              notes: ''
-            - open_time: 1583737200
-              close_time: 1583823540
-              notes: ''
-          track_hours:
-            - open_time: 1583654400
-              close_time: 1583737140
-              notes: ''
-            - open_time: 1583737200
-              close_time: 1583823540
-              notes: ''
-          pool_hours:
-            - open_time: 1583654400
-              close_time: 1583737140
-              notes: ''
-            - open_time: 1583737200
-              close_time: 1583823540
-              notes: ''
-      description: ''
-      properties:
-        name:
+          name: name
+          required: true
           type: string
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-        phone:
-          type: string
-        description:
-          type: string
-        address:
-          type: string
-        open_close_array:
-          $ref: '#/components/schemas/open_close-model'
-        track_hours:
-          $ref: '#/components/schemas/open_close-model'
-        pool_hours:
-          $ref: '#/components/schemas/open_close-model'
-      required:
-        - name
-        - latitude
-        - longitude
-        - phone
-        - description
-        - address
-        - open_close_array
-        - track_hours
-        - pool_hours
-    open_close-model:
-      type: array
-      title: open_close-model
-      x-examples:
-        example-1:
-          open_time: 1597561200
-          notes: closed
-          close_time: 1597561200
-      description: The `open_time` and `close_time` values are both UNIX timestamps. There will be a list of 7 `open_close` items (Sunday to Saturday) that will have updated open and close timestamps for the week.
-      items:
-        type: object
-        properties:
-          open_time:
-            type: integer
-          close_time:
-            type: integer
-          notes:
-            type: string
+      produces:
+        - application/json
+        - application/xml
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/gym-model'
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Gets gym by name
+      tags:
+        - gyms
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms-search'
+schemes:
+  - http
+swagger: '2.0'
+tags:
+  - description: Basic information of all gyms in our catalog
+    name: gyms
+x-components: {}
+
