@@ -1,9 +1,235 @@
-openapi: '3.0.0'
+openapi: 3.0.0
 info:
   title: campus-resources
   version: '1.0'
 servers:
-- url: http://localhost:3000
-paths: {}
+  - url: 'http://localhost:3000'
+paths:
+  /api/resources:
+    get:
+      summary: Get all resources
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/campus-resource'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/err-message'
+      operationId: get-api-resources
+      parameters: []
+    parameters: []
+  '/api/resources/{id}':
+    parameters:
+      - schema:
+          type: integer
+        name: id
+        in: path
+        required: true
+    get:
+      summary: Get resource by ID
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/campus-resource'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/err-message'
+      operationId: get-api-resources-id
+  /api/resources/search:
+    get:
+      summary: Search resources by name
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/campus-resource'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/err-message'
+      operationId: get-api-resources-search
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+  /api/resources/range:
+    get:
+      summary: Get resources by location
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/campus-resource'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/err-message'
+      operationId: get-api-resources-range
+      parameters:
+        - schema:
+            type: number
+          in: query
+          name: longitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: latitude
+          required: true
+        - schema:
+            type: number
+          in: query
+          name: distance
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: units
+          required: true
+  /api/resources/time:
+    get:
+      summary: Get resources by operating times
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/campus-resource'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/err-message'
+      operationId: get-api-resources-time
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: open_time
+          description: |
+            Get resources open after 'open_time'
+        - schema:
+            type: integer
+          in: query
+          name: close_time
+          description: Get resources open before 'close_time'
+  /api/resources/type:
+    get:
+      summary: Get resources by type
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/campus-resource'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/err-message'
+      operationId: get-api-resources-type
+      parameters:
+        - schema:
+            type: array
+          in: query
+          name: type
+          description: Array of types
+          required: true
 components:
-  schemas: {}
+  schemas:
+    campus-resource:
+      title: campus-resource
+      type: object
+      properties:
+        average_meal:
+          type: string
+        cal1card_accepted:
+          type: boolean
+        eatwell_accepted:
+          type: boolean
+        address:
+          type: string
+        by_appointment:
+          type: boolean
+        category:
+          type: string
+        description:
+          type: string
+        email:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        name:
+          type: string
+        on_campus:
+          type: boolean
+        operating_hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/open_close_time'
+        phone:
+          type: string
+        tag:
+          type: string
+      description: ''
+    open_close_time:
+      title: open_close_time
+      type: object
+      properties:
+        open_time:
+          type: integer
+        close_time:
+          type: integer
+        notes:
+          type: string
+    err-message:
+      title: err-message
+      type: object
+      properties:
+        error:
+          type: string
+      description: Error Message sent after a failed/unauthorized request

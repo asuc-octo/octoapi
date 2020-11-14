@@ -10,7 +10,7 @@ servers:
 paths:
   /api/dining:
     get:
-      summary: Get all dining halls
+      summary: Dining Hall List
       tags: []
       responses:
         '200':
@@ -46,7 +46,7 @@ paths:
           in: query
           name: name
           required: true
-      description: Search for dining halls with name name
+      description: Retireves the list of dining halls containing the name
       responses:
         '200':
           description: OK
@@ -71,11 +71,11 @@ paths:
                         picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
                         phone: ''
       operationId: /api/dining/search
-      summary: Search for dining halls by name
+      summary: Dining Hall Search
     parameters: []
   /api/dining/range:
     get:
-      summary: Search for dining halls within range
+      summary: Dining Hall Range
       tags: []
       responses:
         '200':
@@ -101,7 +101,7 @@ paths:
                         picture: 'https://firebasestorage.googleapis.com/v0/b/berkeley-mobile.appspot.com/o/images%2FCafe3.jpg?alt=media&token=f1062476-2cb0-4ce9-9ac1-6109bf588aaa'
                         phone: ''
       operationId: /api/dining/range
-      description: Return dining halls in the location range
+      description: Retrieves the gyms that are at most `radius` kms away from the `latitude` and `longitude` position
       parameters:
         - schema:
             type: number
@@ -116,13 +116,13 @@ paths:
         - schema:
             type: integer
           in: query
-          name: distance
-          description: in km
+          name: radius
+          description: in kms
           required: true
 components:
   schemas:
-    Dining-Hall:
-      title: dining-hall
+    dining-model:
+      title: dining-model
       type: object
       x-examples:
         example-1:
@@ -149,3 +149,12 @@ components:
           type: string
         phone:
           type: string
+        open_close_array:
+          type: array
+          items:
+            $ref: ./utils.v1.yaml#/components/schemas/open_close-model
+      required:
+        - name
+        - latitude
+        - longitude
+        - address

@@ -1,0 +1,24 @@
+openapi: 3.0.0
+info:
+  title: utils
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths: {}
+components:
+  schemas:
+    open_close-model:
+      title: open_close-model
+      type: object
+      properties:
+        open_time:
+          type: number
+        notes:
+          type: string
+        close_time:
+          type: number
+      x-examples:
+        example-1:
+          open_time: 1597561200
+          notes: closed
+          close_time: 1597561200
