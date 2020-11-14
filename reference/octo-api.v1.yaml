@@ -64,24 +64,6 @@ definitions:
           - close_time: 1583823540
             notes: ''
             open_time: 1583737200
-  open_close-model:
-    description: The `open_time` and `close_time` values are both UNIX timestamps. There will be a list of 7 `open_close` items (Sunday to Saturday) that will have updated open and close timestamps for the week.
-    items:
-      properties:
-        close_time:
-          type: integer
-        notes:
-          type: string
-        open_time:
-          type: integer
-      type: object
-    title: open_close-model
-    type: array
-    x-examples:
-      example-1:
-        close_time: 1597561200
-        notes: closed
-        open_time: 1597561200
   library-model:
     description: ''
     type: object
@@ -1648,6 +1630,25 @@ definitions:
       - minutely
       - hourly
       - daily
+  open_close-model:
+    description: The `open_time` and `close_time` values are both UNIX timestamps. There will be a list of 7 `open_close` items (Sunday to Saturday) that will have updated open and close timestamps for the week.
+    items:
+      properties:
+        close_time:
+          type: integer
+        notes:
+          type: string
+        open_time:
+          type: integer
+      type: object
+    title: open_close-model
+    type: array
+    x-examples:
+      example-1:
+        close_time: 1597561200
+        notes: closed
+        open_time: 1597561200
+  
 host: 'localhost:3000'
 info:
   contact:
