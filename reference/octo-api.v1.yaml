@@ -2,23 +2,20 @@ openapi: 3.0.0
 info:
   title: OCTO API
   version: '1.0'
-  description: " The OCTO API is a resource for student developers at Berkeley to have access to the
-  same data that backs Berkeley Mobile, for the purpose of supporting student created applications. Please use this
-  free resource fairly by not unnecessarily spamming the API and crediting Berkeley Mobile as the source. We do not
-  provide guarantees about the correctness of the data, but we do try to maintain it to the best of our abilities."
+  description: ' The OCTO API is a resource for student developers at Berkeley to have access to the same data that backs Berkeley Mobile, for the purpose of supporting student created applications. Please use this free resource fairly by not unnecessarily spamming the API and crediting Berkeley Mobile as the source. We do not provide guarantees about the correctness of the data, but we do try to maintain it to the best of our abilities.'
   contact:
-    email: "octo.api@asuc.org"
+    email: octo.api@asuc.org
 servers:
-- url: 'http://localhost:3000'
+  - url: 'http://localhost:3000'
 tags:
-- name: "gyms"
-  description: "Basic information of all gyms in our catalog"
+  - name: gyms
+    description: Basic information of all gyms in our catalog
 paths:
   /api/gyms:
     get:
       summary: Gets all gyms
-      tags: 
-      - gyms
+      tags:
+        - gyms
       operationId: get-api-gyms
       description: Retrieves all gyms
       responses:
@@ -63,9 +60,9 @@ paths:
                           notes: ''
   /api/gyms/search:
     get:
-      summary: Search for gym by name
+      summary: Gets gym by name
       tags:
-      - "gyms"
+        - gyms
       responses:
         '200':
           description: OK
@@ -104,6 +101,14 @@ paths:
                       - open_time: 1583737200
                         close_time: 1583823540
                         notes: ''
+            application/xml:
+              schema:
+                type: object
+                properties: {}
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
       operationId: get-api-gyms-search
       parameters:
         - schema:
@@ -117,7 +122,7 @@ paths:
     get:
       summary: Gets gyms within distance range
       tags:
-      - gyms
+        - gyms
       responses:
         '200':
           description: OK
@@ -179,13 +184,25 @@ paths:
           in: query
           name: radius
           required: true
-          description: 'Radius away from (latitude, longitude) in miles'
-      description: Retrieves the gyms that are at most `radius` miles away from the `latitude` and `longitude` position
+          description: 'Radius away from (latitude, longitude) in `unit`'
+        - schema:
+            type: string
+            enum:
+              - ft
+              - yd
+              - mi
+              - m
+              - km
+          in: query
+          name: unit
+          description: ''
+          required: true
+      description: Retrieves the gyms that are at most `radius` `unit` distance away from the `latitude` and `longitude` position
   /api/gyms/open:
     get:
-      summary: Gyms open at time
+      summary: Gets gyms open at given time
       tags:
-      - "gyms"
+        - gyms
       responses:
         '200':
           description: OK
@@ -234,7 +251,7 @@ paths:
           in: query
           name: time
           description: A Unix Timestamp
-      description: Retrieves the gyms that are open now (default) or at the provided timestamp
+      description: Retrieves the gyms that are open now (default) or at the provided UNIX timestamp
 components:
   schemas:
     gym-model:
@@ -242,7 +259,6 @@ components:
       type: object
       x-examples:
         example-1:
-          id: string
           name: RSF
           latitude: 37.8685702
           longitude: -122.2627233
@@ -270,9 +286,8 @@ components:
             - open_time: 1583737200
               close_time: 1583823540
               notes: ''
+      description: ''
       properties:
-        id:
-          type: string
         name:
           type: string
         latitude:
@@ -288,44 +303,43 @@ components:
         address:
           type: string
         open_close_array:
-          type: array
-          items:
-            type: object
-            properties:
-              open_time:
-                type: integer
-                format: int64
-              close_time:
-                type: integer
-                format: int64
+          $ref: '#/components/schemas/open_close-model'
         track_hours:
-          type: array
-          items:
-            type: object
-            properties:
-              open_time:
-                type: integer
-                format: int64
-              close_time:
-                type: integer
-                format: int64
+          $ref: '#/components/schemas/open_close-model'
         pool_hours:
-          type: array
-          items:
-            type: object
-            properties:
-              open_time:
-                type: integer
-                format: int64
-              close_time:
-                type: integer
-                format: int64
+          $ref: '#/components/schemas/open_close-model'
       required:
         - name
         - latitude
         - longitude
+        - phone
+        - description
         - address
         - open_close_array
         - track_hours
         - pool_hours
-      description: ''
+    open_close-model:
+      type: array
+      title: open_close-model
+      x-examples:
+        example-1:
+          open_time: 1597561200
+          notes: closed
+          close_time: 1597561200
+      description: The `open_time` and `close_time` values are both UNIX timestamps. There will be a list of 7 `open_close` items (Sunday to Saturday) that will have updated open and close timestamps for the week.
+      items:
+        type: object
+        properties:
+          open_time:
+            type: integer
+          close_time:
+            type: integer
+          notes:
+            type: string
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: key
+security:
+  - ApiKeyAuth: []
