@@ -38,13 +38,7 @@ definitions:
     x-examples:
       example-1:
         address: '2301 Bancroft Way, Berkeley, CA 94720'
-        description: >-
-          The Recreational Sports Facility (RSF) is the University’s largest,
-          most complete fitness center with over 100,000 square feet of activity
-          space, including an Olympic-sized swimming pool, 3 weight rooms, seven
-          basketball courts, seven racquetball/handball courts, six squash
-          courts, treadmills, elliptical trainers, stairmasters, rowing machines
-          and stationary bikes.
+        description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes.'
         latitude: 37.8685702
         longitude: -122.2627233
         name: RSF
@@ -71,10 +65,7 @@ definitions:
             notes: ''
             open_time: 1583737200
   open_close-model:
-    description: >-
-      The `open_time` and `close_time` values are both UNIX timestamps. There
-      will be a list of 7 `open_close` items (Sunday to Saturday) that will have
-      updated open and close timestamps for the week.
+    description: The `open_time` and `close_time` values are both UNIX timestamps. There will be a list of 7 `open_close` items (Sunday to Saturday) that will have updated open and close timestamps for the week.
     items:
       properties:
         close_time:
@@ -91,6 +82,66 @@ definitions:
         close_time: 1597561200
         notes: closed
         open_time: 1597561200
+  library-model:
+    description: ''
+    type: object
+    properties:
+      address:
+        type: string
+        minLength: 1
+      description:
+        type: string
+        minLength: 1
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+        minLength: 1
+      open_close_array:
+        $ref: '#/definitions/open_close-model'
+    required:
+      - address
+      - description
+      - latitude
+      - longitude
+      - name
+      - open_close_array
+    x-examples:
+      example-1:
+        address: '230 Kroeber Hall, Berkeley, CA 94720'
+        description: |-
+          The Anthropology Library includes academic works covering socio-cultural anthropology, traditional cultures, archaeology, folklore methods and theory as well as physical anthropology. Collections focus on historical areas of faculty interest along with current research interests.
+
+          The anthropology library currently holds 59,000 print volumes, with several thousand more stored off-site, and provides access to over 12,000 ebooks on archaeology, ethnography, or anthropology.
+
+          You can find older faculty publications in AnthroHub and information on selected Emeritus faculty.
+        latitude: 37.869842999999996
+        longitude: -122.25528490000002
+        name: Anthropology Library
+        open_close_array:
+          - close_time: 1604908740
+            notes: ''
+            open_time: 1604822400
+          - close_time: 1604995140
+            notes: ''
+            open_time: 1604908800
+          - close_time: 1605081540
+            notes: ''
+            open_time: 1604995200
+          - close_time: 1605167940
+            notes: ''
+            open_time: 1605081600
+          - close_time: 1605254340
+            notes: ''
+            open_time: 1605168000
+          - close_time: 1605340740
+            notes: ''
+            open_time: 1605254400
+          - close_time: 1605427140
+            notes: ''
+            open_time: 1605340800
 host: 'localhost:3000'
 info:
   contact:
@@ -113,16 +164,38 @@ paths:
             items:
               $ref: '#/definitions/gym-model'
             type: array
-      summary: Gets all gyms
+          examples:
+            example-1:
+              - address: ' 2301 Bancroft Way, Berkeley, CA 94720'
+                description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes. '
+                latitude: 37.8685702
+                longitude: -122.2627233
+                name: RSF
+                phone: 510-642-5072
+                open_close_array:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+                pool_hours:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+                track_hours:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get all gyms
       tags:
         - gyms
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms'
   /api/gyms/open:
     get:
-      description: >-
-        Retrieves the gyms that are open now (default) or at the provided UNIX
-        timestamp
+      description: Retrieves the gyms that are open now (default) or at the provided UNIX timestamp
       operationId: get-api-gyms-open
       parameters:
         - description: A Unix Timestamp
@@ -139,16 +212,38 @@ paths:
             items:
               $ref: '#/definitions/gym-model'
             type: array
-      summary: Gets gyms open at given time
+          examples:
+            example-1:
+              - address: ' 2301 Bancroft Way, Berkeley, CA 94720'
+                description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes. '
+                latitude: 37.8685702
+                longitude: -122.2627233
+                name: RSF
+                phone: 510-642-5072
+                open_close_array:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+                pool_hours:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+                track_hours:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get gyms open at given time
       tags:
         - gyms
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms-open'
   /api/gyms/range:
     get:
-      description: >-
-        Retrieves the gyms that are at most `radius` `unit` distance away from
-        the `latitude` and `longitude` position
+      description: Retrieves the gyms that are at most `radius` `unit` distance away from the `latitude` and `longitude` position
       operationId: get-api-gyms-range
       parameters:
         - format: double
@@ -188,7 +283,31 @@ paths:
             items:
               $ref: '#/definitions/gym-model'
             type: array
-      summary: Gets gyms within distance range
+          examples:
+            example-1:
+              - address: ' 2301 Bancroft Way, Berkeley, CA 94720'
+                description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes. '
+                latitude: 37.8685702
+                longitude: -122.2627233
+                name: RSF
+                phone: 510-642-5072
+                open_close_array:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+                pool_hours:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+                track_hours:
+                  - close_time: 0
+                    notes: string
+                    open_time: 0
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get gyms within distance range
       tags:
         - gyms
       x-google-backend:
@@ -211,20 +330,306 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gym-model'
+          examples:
+            example-1:
+              address: ' 2301 Bancroft Way, Berkeley, CA 94720'
+              description: 'The Recreational Sports Facility (RSF) is the University’s largest, most complete fitness center with over 100,000 square feet of activity space, including an Olympic-sized swimming pool, 3 weight rooms, seven basketball courts, seven racquetball/handball courts, six squash courts, treadmills, elliptical trainers, stairmasters, rowing machines and stationary bikes. '
+              latitude: 37.8685702
+              longitude: -122.2627233
+              name: RSF
+              phone: 510-642-5072
+              open_close_array:
+                - close_time: 0
+                  notes: string
+                  open_time: 0
+              pool_hours:
+                - close_time: 0
+                  notes: string
+                  open_time: 0
+              track_hours:
+                - close_time: 0
+                  notes: string
+                  open_time: 0
         '400':
           description: Bad Request
         '500':
           description: Internal Server Error
-      summary: Gets gym by name
+      summary: Get gym by name
       tags:
         - gyms
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/gyms-search'
+  /api/libraries:
+    get:
+      description: Retrieves all libraries
+      operationId: get-api-libraries
+      parameters: []
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/library-model'
+            type: array
+          examples:
+            example-1:
+              - address: '230 Kroeber Hall, Berkeley, CA 94720'
+                description: |-
+                  The Anthropology Library includes academic works covering socio-cultural anthropology, traditional cultures, archaeology, folklore methods and theory as well as physical anthropology. Collections focus on historical areas of faculty interest along with current research interests.
+
+                  The anthropology library currently holds 59,000 print volumes, with several thousand more stored off-site, and provides access to over 12,000 ebooks on archaeology, ethnography, or anthropology.
+
+                  You can find older faculty publications in AnthroHub and information on selected Emeritus faculty.
+                latitude: 37.869842999999996
+                longitude: -122.25528490000002
+                name: Anthropology Library
+                open_close_array:
+                  - close_time: 1604908740
+                    notes: ''
+                    open_time: 1604822400
+                  - close_time: 1604995140
+                    notes: ''
+                    open_time: 1604908800
+                  - close_time: 1605081540
+                    notes: ''
+                    open_time: 1604995200
+                  - close_time: 1605167940
+                    notes: ''
+                    open_time: 1605081600
+                  - close_time: 1605254340
+                    notes: ''
+                    open_time: 1605168000
+                  - close_time: 1605340740
+                    notes: ''
+                    open_time: 1605254400
+                  - close_time: 1605427140
+                    notes: ''
+                    open_time: 1605340800
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get all libraries
+      tags:
+        - libraries
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/libraries'
+  /api/libraries/open:
+    get:
+      description: Retrieves the gyms that are open now (default) or at the provided UNIX timestamp
+      operationId: get-api-libraries-open
+      parameters:
+        - description: A Unix Timestamp
+          format: int64
+          in: query
+          name: time
+          type: integer
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/library-model'
+            type: array
+          examples:
+            example-1:
+              - address: '230 Kroeber Hall, Berkeley, CA 94720'
+                description: |-
+                  The Anthropology Library includes academic works covering socio-cultural anthropology, traditional cultures, archaeology, folklore methods and theory as well as physical anthropology. Collections focus on historical areas of faculty interest along with current research interests.
+
+                  The anthropology library currently holds 59,000 print volumes, with several thousand more stored off-site, and provides access to over 12,000 ebooks on archaeology, ethnography, or anthropology.
+
+                  You can find older faculty publications in AnthroHub and information on selected Emeritus faculty.
+                latitude: 37.869842999999996
+                longitude: -122.25528490000002
+                name: Anthropology Library
+                open_close_array:
+                  - close_time: 1604908740
+                    notes: ''
+                    open_time: 1604822400
+                  - close_time: 1604995140
+                    notes: ''
+                    open_time: 1604908800
+                  - close_time: 1605081540
+                    notes: ''
+                    open_time: 1604995200
+                  - close_time: 1605167940
+                    notes: ''
+                    open_time: 1605081600
+                  - close_time: 1605254340
+                    notes: ''
+                    open_time: 1605168000
+                  - close_time: 1605340740
+                    notes: ''
+                    open_time: 1605254400
+                  - close_time: 1605427140
+                    notes: ''
+                    open_time: 1605340800
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get libraries open at given time
+      tags:
+        - libraries
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/libraries-open'
+  /api/libraries/range:
+    get:
+      description: Retrieves the libraries that are at most `radius` `unit` distance away from the `latitude` and `longitude` position
+      operationId: get-api-libraries-range
+      parameters:
+        - format: double
+          in: query
+          name: latitude
+          required: true
+          type: number
+        - format: double
+          in: query
+          name: longitude
+          required: true
+          type: number
+        - description: 'Radius away from (latitude, longitude) in `unit`'
+          exclusiveMinimum: true
+          format: double
+          in: query
+          name: radius
+          required: true
+          type: number
+        - description: ''
+          enum:
+            - ft
+            - yd
+            - mi
+            - m
+            - km
+          in: query
+          name: unit
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/library-model'
+            type: array
+          examples:
+            example-1:
+              - address: '230 Kroeber Hall, Berkeley, CA 94720'
+                description: |-
+                  The Anthropology Library includes academic works covering socio-cultural anthropology, traditional cultures, archaeology, folklore methods and theory as well as physical anthropology. Collections focus on historical areas of faculty interest along with current research interests.
+
+                  The anthropology library currently holds 59,000 print volumes, with several thousand more stored off-site, and provides access to over 12,000 ebooks on archaeology, ethnography, or anthropology.
+
+                  You can find older faculty publications in AnthroHub and information on selected Emeritus faculty.
+                latitude: 37.869842999999996
+                longitude: -122.25528490000002
+                name: Anthropology Library
+                open_close_array:
+                  - close_time: 1604908740
+                    notes: ''
+                    open_time: 1604822400
+                  - close_time: 1604995140
+                    notes: ''
+                    open_time: 1604908800
+                  - close_time: 1605081540
+                    notes: ''
+                    open_time: 1604995200
+                  - close_time: 1605167940
+                    notes: ''
+                    open_time: 1605081600
+                  - close_time: 1605254340
+                    notes: ''
+                    open_time: 1605168000
+                  - close_time: 1605340740
+                    notes: ''
+                    open_time: 1605254400
+                  - close_time: 1605427140
+                    notes: ''
+                    open_time: 1605340800
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get libraries within distance range
+      tags:
+        - libraries
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/libraries-location'
+  /api/libraries/search:
+    get:
+      description: Retrieves the library whose name matches the search string
+      operationId: get-api-libraries-search
+      parameters:
+        - description: The name of the library
+          in: query
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/json
+        - application/xml
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/library-model'
+          examples:
+            example-1:
+              address: '230 Kroeber Hall, Berkeley, CA 94720'
+              description: |-
+                The Anthropology Library includes academic works covering socio-cultural anthropology, traditional cultures, archaeology, folklore methods and theory as well as physical anthropology. Collections focus on historical areas of faculty interest along with current research interests.
+
+                The anthropology library currently holds 59,000 print volumes, with several thousand more stored off-site, and provides access to over 12,000 ebooks on archaeology, ethnography, or anthropology.
+
+                You can find older faculty publications in AnthroHub and information on selected Emeritus faculty.
+              latitude: 37.869842999999996
+              longitude: -122.25528490000002
+              name: Anthropology Library
+              open_close_array:
+                - close_time: 1604908740
+                  notes: ''
+                  open_time: 1604822400
+                - close_time: 1604995140
+                  notes: ''
+                  open_time: 1604908800
+                - close_time: 1605081540
+                  notes: ''
+                  open_time: 1604995200
+                - close_time: 1605167940
+                  notes: ''
+                  open_time: 1605081600
+                - close_time: 1605254340
+                  notes: ''
+                  open_time: 1605168000
+                - close_time: 1605340740
+                  notes: ''
+                  open_time: 1605254400
+                - close_time: 1605427140
+                  notes: ''
+                  open_time: 1605340800
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      summary: Get library by name
+      tags:
+        - libraries
+      x-google-backend:
+        address: 'https://us-central1-api-team-292919.cloudfunctions.net/libraries-search'
 schemes:
   - http
 swagger: '2.0'
 tags:
   - description: Basic information of all gyms in our catalog
     name: gyms
+  - description: Basic information of all libraries in our catalog
+    name: libraries
 x-components: {}
-
