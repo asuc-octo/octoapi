@@ -3,17 +3,17 @@ package gyms
 
 import (
     "fmt"
-    "io"
     "html"
     "net/http"
     "context"
-    "bytes"
+    "log"
     "encoding/json"
     "google.golang.org/api/iterator"
     "cloud.google.com/go/firestore"
-    "cloud.google.com/go/storage"
     "google.golang.org/api/option"
     "github.com/gorilla/schema"
+    secretmanager "cloud.google.com/go/secretmanager/apiv1"
+    secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 // type Timing struct {
 //     Open_Time int64 `json:"open_time"`
@@ -34,6 +34,8 @@ var decoder = schema.NewDecoder()
 var client *firestore.Client
 var ctx context.Context
 var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_hours", "track_hours", "pool_hours"}
+var firestoreKeyResourceID = "projects/980046983693/secrets/firestore_access_key/versions/1"
+
 
 func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
@@ -44,7 +46,8 @@ func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
     }
     err := initFirestore(w)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        log.Printf("Firestore Init failed: %v", err)
         return
     }
     // Search by name
@@ -52,12 +55,14 @@ func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
     var gym map[string]interface{}
     gym, err = getGymByName(w, html.EscapeString(name[0]))
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        log.Printf("Get Name failed: %v", err)
         return
     }
     output, err = json.Marshal(&gym)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        log.Printf("Couldn't convert gym to JSON: %v", err)
         return
     }
     fmt.Fprint(w, string(output))
@@ -65,30 +70,16 @@ func GymSearchEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 func initFirestore(w http.ResponseWriter)  error {
     ctx = context.Background()
-
-    /* Get Auth for accessing Firestore by getting json file in cloud storage*/
-    storageClient, storageError := storage.NewClient(ctx)
-    if storageError != nil {
-        fmt.Fprint(w, "storage client failed\n")
-        return storageError
+    /* Get Auth for accessing Firestore by getting firestore secret */
+    key, err := getFirestoreSecret(w)
+    if err != nil {
+        return err
     }
-    defer storageClient.Close()
-    bkt := storageClient.Bucket("firestore_access")
-    obj := bkt.Object("berkeley-mobile-e0922919475f.json")
-    read, readerError := obj.NewReader(ctx)
-    if readerError != nil {
-        fmt.Fprint(w, "Reader failed!\n")
-        return readerError
-    }
-    defer read.Close()
-    json_input := StreamToByte(read) // the byte array of the json file
-
     /* Load Firestore */
     var clientErr error
-    opt := option.WithCredentialsJSON(json_input)
+    opt := option.WithCredentialsJSON([]byte(key))
     client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt)
     if clientErr != nil {
-        fmt.Fprint(w, "client failed\n")
         return clientErr
     }
     return nil
@@ -115,9 +106,20 @@ func getGymByName(w http.ResponseWriter, name string) (map[string]interface{}, e
     return gym, nil
 }
 
-func StreamToByte(stream io.Reader) []byte {
-    buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.Bytes()
+func getFirestoreSecret(w http.ResponseWriter) (string, error) {
+    ctx := context.Background()
+    client, err := secretmanager.NewClient(ctx)
+    if err != nil {
+        return "", err
+    }
+    // Build the request.
+    req := &secretmanagerpb.AccessSecretVersionRequest{
+            Name: firestoreKeyResourceID,
+    }
+    // Call the API.
+    result, err := client.AccessSecretVersion(ctx, req)
+    if err != nil {
+            return "", err
+    }
+    return string(result.Payload.Data), nil
 }
-
