@@ -3,20 +3,20 @@ package gyms
 
 import (
     "fmt"
-    "io"
     "net/http"
     "context"
-    "bytes"
     "encoding/json"
     "errors"
     "strconv"
+    "log"
     "google.golang.org/api/iterator"
     "cloud.google.com/go/firestore"
-    "cloud.google.com/go/storage"
     "google.golang.org/api/option"
     "github.com/umahmood/haversine"
     "github.com/martinlindhe/unit"
     "github.com/gorilla/schema"
+    secretmanager "cloud.google.com/go/secretmanager/apiv1"
+    secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 // type Timing struct {
 //     Open_Time int64 `json:"open_time"`
@@ -37,7 +37,7 @@ import (
 var decoder = schema.NewDecoder()
 var client *firestore.Client
 var ctx context.Context
-var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_hours", "track_hours", "pool_hours"}
+var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_array", "track_hours", "pool_hours"}
 var unitMap = map[string]unit.Length{
     "ft": unit.Foot,
     "yd": unit.Yard,
@@ -45,6 +45,8 @@ var unitMap = map[string]unit.Length{
     "m": unit.Meter,
     "km": unit.Kilometer,
 }
+var firestoreKeyResourceID = "projects/980046983693/secrets/firestore_access_key/versions/1"
+
 func GymLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     var radius float64
@@ -118,13 +120,9 @@ func GymLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
 
     err = initFirestore(w)
 
-    // Distance range
-    //fmt.Fprint(w, convertToKilometers(input.Radius, input.Unit))
-    
-
-    err = initFirestore(w)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        log.Printf("Firestore Init failed: %v", err)
         return
     }
     // Distance range
@@ -132,46 +130,34 @@ func GymLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
     var gyms []map[string]interface{}
     gyms, err = getGymsInRadius(w, longitude, latitude, kilometers)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        log.Printf("Get Gyms in Radius failed: %v", err)
         return
     }
     output, err = json.Marshal(gyms)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        log.Printf("Couldn't convert gym to JSON: %v", err)
         return
     }
     fmt.Fprint(w, string(output))
 }
 func initFirestore(w http.ResponseWriter)  error {
     ctx = context.Background()
-
-    /* Get Auth for accessing Firestore by getting json file in cloud storage*/
-    storageClient, storageError := storage.NewClient(ctx)
-    if storageError != nil {
-        fmt.Fprint(w, "storage client failed\n")
-        return storageError
+    /* Get Auth for accessing Firestore by getting firestore secret */
+    key, err := getFirestoreSecret(w)
+    if err != nil {
+        return err
     }
-    defer storageClient.Close()
-    bkt := storageClient.Bucket("firestore_access")
-    obj := bkt.Object("berkeley-mobile-e0922919475f.json")
-    read, readerError := obj.NewReader(ctx)
-    if readerError != nil {
-        fmt.Fprint(w, "Reader failed!\n")
-        return readerError
-    }
-    defer read.Close()
-    json_input := StreamToByte(read) // the byte array of the json file
-
     /* Load Firestore */
     var clientErr error
-    opt := option.WithCredentialsJSON(json_input)
+    opt := option.WithCredentialsJSON([]byte(key))
     client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt)
     if clientErr != nil {
-        fmt.Fprint(w, "client failed\n")
         return clientErr
     }
     return nil
-} 
+}
 
 // radius in meters
 func getGymsInRadius(w http.ResponseWriter, longitude float64, latitude float64, radius float64) ([]map[string]interface{}, error){
@@ -184,7 +170,6 @@ func getGymsInRadius(w http.ResponseWriter, longitude float64, latitude float64,
             break
         }
         if err != nil {
-            fmt.Println(err)
             return nil, err
         }
         docData := doc.Data()
@@ -195,12 +180,11 @@ func getGymsInRadius(w http.ResponseWriter, longitude float64, latitude float64,
         gymLatitude, okLatitude := gym["latitude"].(float64)
         gymLongitude, okLongitude := gym["longitude"].(float64)
         if !okLatitude {
-            fmt.Println("Couldn't parse latitude")
+            log.Printf("Latitude cannot be parsed: %v", gym)
         } else if !okLongitude {
-            fmt.Println("Couldn't parse longitude")
+            log.Printf("Longitude cannot be parsed: %v", gym)
         } else {
             _, km := haversine.Distance(haversine.Coord{Lat: latitude, Lon: longitude}, haversine.Coord{Lat: gymLatitude, Lon: gymLongitude})
-            fmt.Printf("%f: %f, %f - %f, %f\n", km , latitude , longitude , gymLatitude , gymLongitude)
             if (km <= radius) {
                 gyms = append(gyms, gym)
             }
@@ -216,24 +200,21 @@ func convertToKilometers(value float64, units string) (float64, error) {
     } else {
         return 0, errors.New("URL Param 'unit' is incorrect")
     }
-    /*switch units {
-        case "ft":
-            return (unit.Length(value) * unit.Foot).Kilometers()
-        case "yd":
-            return (unit.Length(value) * unit.Yard).Kilometers()
-        case "mi":
-            return (unit.Length(value) * unit.Mile).Kilometers()
-        case "m":
-            return (unit.Length(value) * unit.Meter).Kilometers()
-        case "km":
-            return (unit.Length(value) * unit.Kilometer).Kilometers()
+}
+func getFirestoreSecret(w http.ResponseWriter) (string, error) {
+    ctx := context.Background()
+    client, err := secretmanager.NewClient(ctx)
+    if err != nil {
+        return "", err
     }
-    return 0.0*/
+    // Build the request.
+    req := &secretmanagerpb.AccessSecretVersionRequest{
+            Name: firestoreKeyResourceID,
+    }
+    // Call the API.
+    result, err := client.AccessSecretVersion(ctx, req)
+    if err != nil {
+            return "", err
+    }
+    return string(result.Payload.Data), nil
 }
-
-func StreamToByte(stream io.Reader) []byte {
-  buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.Bytes()
-}
-

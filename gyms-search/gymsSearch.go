@@ -33,7 +33,7 @@ import (
 var decoder = schema.NewDecoder()
 var client *firestore.Client
 var ctx context.Context
-var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_hours", "track_hours", "pool_hours"}
+var GymFields = [...]string{"name", "description", "latitude", "longitude", "address", "phone", "open_close_array", "track_hours", "pool_hours"}
 var firestoreKeyResourceID = "projects/980046983693/secrets/firestore_access_key/versions/1"
 
 
