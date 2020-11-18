@@ -1,36 +1,39 @@
-package dining
+package libraries
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
 	"reflect"
 	"strconv"
 
 	"cloud.google.com/go/firestore"
-	"cloud.google.com/go/storage"
-	"github.com/gorilla/schema"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/martinlindhe/unit"
 	"github.com/umahmood/haversine"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
-// type Dining struct {
+// type Timing struct {
+//     Open_Time int64 `json:"open_time"`
+//     Close_Time int64 `json:"close_time"`
+// }
+
+// type Library struct {
 // 	Name string `json:"name"`
 //     Latitude float64 `json:"latitude"`
 //     Longitude float64 `json:"longitude"`
-//     Phone string `json:"phone"`
 //     Description string `json:"description"`
 //     Address string `json:"address"`
+//     Open_Close_Hours []Timing `json:"open_close_hours"`
 // }
 
-var DiningFields = [6]string{"name", "description", "latitude", "longitude", "address", "phone"}
-var decoder = schema.NewDecoder()
+var LibraryFields = [6]string{"name", "description", "latitude", "longitude", "address", "open_close_array"}
 var floatType = reflect.TypeOf(float64(0))
 var unitMap = map[string]unit.Length{
 	"ft": unit.Foot,
@@ -39,13 +42,17 @@ var unitMap = map[string]unit.Length{
 	"m":  unit.Meter,
 	"km": unit.Kilometer,
 }
+var client *firestore.Client
+var ctx context.Context
+var firestoreKeyResourceID = "projects/980046983693/secrets/firestore_access_key/versions/1"
 
-func DiningLocationEndpoint(w http.ResponseWriter, r *http.Request) {
+func LibrariesLocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	var radius float64
 	var longitude float64
 	var latitude float64
 	var units string
 	var err error
+	w.Header().Set("Content-Type", "application/json")
 	radiusInput, ok := r.URL.Query()["radius"]
 	if ok {
 		if len(radiusInput[0]) >= 1 {
@@ -109,56 +116,48 @@ func DiningLocationEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, convertErr.Error(), http.StatusBadRequest)
 		return
 	}
-	client, ctx, fstoreErr := initFirestore(w)
+	fstoreErr := initFirestore(w)
 	if fstoreErr != nil {
 		http.Error(w, fstoreErr.Error(), http.StatusInternalServerError)
+		log.Printf("Firestore Init failed: %v", fstoreErr)
 		return
 	}
-	dinings, diningErr := locateDinings(ctx, w, client, longitude, latitude, kilometers)
-	if diningErr != nil {
-		http.Error(w, diningErr.Error(), http.StatusInternalServerError)
+	libraries, libraryErr := locateLibraries(ctx, w, client, longitude, latitude, kilometers)
+	if libraryErr != nil {
+		http.Error(w, libraryErr.Error(), http.StatusInternalServerError)
+		log.Printf("libraries location GET failed: %v", libraryErr)
 		return
 	}
-	output, jsonErr := json.Marshal(&dinings)
+	output, jsonErr := json.Marshal(&libraries)
 	if jsonErr != nil {
 		http.Error(w, jsonErr.Error(), http.StatusInternalServerError)
+		log.Printf("libraries JSON conversion failed: %v", jsonErr)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(output))
 }
 
-func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context, error) {
-	ctx := context.Background()
-
-	/* Get Auth for accessing Firestore by getting json file in cloud storage*/
-	storageClient, clientErr := storage.NewClient(ctx)
-	if clientErr != nil {
-		return nil, nil, clientErr
+func initFirestore(w http.ResponseWriter) error {
+	ctx = context.Background()
+	/* Get Auth for accessing Firestore by getting firestore secret */
+	key, err := getFirestoreSecret(w)
+	if err != nil {
+		return err
 	}
-	defer storageClient.Close()
-	bkt := storageClient.Bucket("firestore_access")
-	obj := bkt.Object("berkeley-mobile-e0922919475f.json")
-	read, readErr := obj.NewReader(ctx)
-	if readErr != nil {
-		return nil, nil, readErr
-	}
-	defer read.Close()
-	json_input := StreamToByte(read) // the byte array of the json file
-
 	/* Load Firestore */
-	opt := option.WithCredentialsJSON(json_input)
-	client, new_err := firestore.NewClient(ctx, "berkeley-mobile", opt)
-	if new_err != nil {
-		return nil, nil, new_err
+	var clientErr error
+	opt := option.WithCredentialsJSON([]byte(key))
+	client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt)
+	if clientErr != nil {
+		return clientErr
 	}
-	return client, ctx, nil
+	return nil
 }
 
-func locateDinings(ctx context.Context, w http.ResponseWriter, client *firestore.Client, longitude float64, latitude float64, radius float64) ([]map[string]interface{}, error) {
+func locateLibraries(ctx context.Context, w http.ResponseWriter, client *firestore.Client, longitude float64, latitude float64, radius float64) ([]map[string]interface{}, error) {
 	defer client.Close()
-	dinings := make([]map[string]interface{}, 0)
-	iter := client.Collection("Dining Halls").Documents(ctx)
+	libraries := make([]map[string]interface{}, 0)
+	iter := client.Collection("Libraries").Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -176,14 +175,14 @@ func locateDinings(ctx context.Context, w http.ResponseWriter, client *firestore
 		_, km := haversine.Distance(haversine.Coord{Lat: latitude, Lon: longitude},
 			haversine.Coord{Lat: docLat, Lon: docLon})
 		if km < radius {
-			dining := make(map[string]interface{})
-			for _, element := range DiningFields {
-				dining[element] = docData[element]
+			library := make(map[string]interface{})
+			for _, element := range LibraryFields {
+				library[element] = docData[element]
 			}
-			dinings = append(dinings, dining)
+			libraries = append(libraries, library)
 		}
 	}
-	return dinings, nil
+	return libraries, nil
 }
 
 func convertToKilometers(value float64, units string) (float64, error) {
@@ -205,8 +204,20 @@ func getFloat(unk interface{}) (float64, error) {
 	return fv.Float(), nil
 }
 
-func StreamToByte(stream io.Reader) []byte {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.Bytes()
+func getFirestoreSecret(w http.ResponseWriter) (string, error) {
+	ctx := context.Background()
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		return "", err
+	}
+	// Build the request.
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: firestoreKeyResourceID,
+	}
+	// Call the API.
+	result, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	return string(result.Payload.Data), nil
 }
