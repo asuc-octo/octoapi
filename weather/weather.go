@@ -3,25 +3,28 @@ package weather
 
 import (
     "fmt"
-    "io"
+    "log"
     "io/ioutil"
     "net/http"
     "context"
-    "bytes"
-    "cloud.google.com/go/storage"
+    secretmanager "cloud.google.com/go/secretmanager/apiv1"
+    secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
+var weatherKeyResourceID = "projects/980046983693/secrets/weather_access_key/versions/1"
 
 // HelloWorld prints the JSON encoded "message" field in the body
 // of the request or "Hello, World!" if there isn't one.
 func WeatherEndpoint(w http.ResponseWriter, r *http.Request) {
-    apiKey, err := getAPIKey(w)
+    apiKey, err := getWeatherSecret(w)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to Weather API", http.StatusInternalServerError)
+        log.Printf("Weather Secret loading failed: %v", err)
         return
     }
     resp, err := http.Get("https://api.openweathermap.org/data/2.5/onecall?lat=37.8712&lon=-122.2601&appid=" + apiKey)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
+        log.Printf("Weather API error: %v", err)
         return
     }
 
@@ -29,35 +32,30 @@ func WeatherEndpoint(w http.ResponseWriter, r *http.Request) {
 
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't connect to Weather API", http.StatusInternalServerError)
+        log.Printf("Couldn't convert Weather API output to our output: %v", err)
         return
     }
     w.Header().Set("Content-Type", "application/json")
     fmt.Fprint(w, string(body))
 }
 
-func getAPIKey(w http.ResponseWriter) (string, error) {
+func getWeatherSecret(w http.ResponseWriter) (string, error) {
     ctx := context.Background()
-    storageClient, err := storage.NewClient(ctx)
+    client, err := secretmanager.NewClient(ctx)
     if err != nil {
-        fmt.Fprint(w, "storage client failed\n")
         return "", err
     }
-    defer storageClient.Close()
-    bkt := storageClient.Bucket("weather_api_access")
-    obj := bkt.Object("weather_map_api_key.txt")
-    read, err1 := obj.NewReader(ctx)
-    if err1 != nil {
-        fmt.Fprint(w, "Reader failed!\n")
-        return "", err1
-    }
-    defer read.Close()
-    apiKey := StreamToString(read)
-    return apiKey, nil
-}
 
-func StreamToString(stream io.Reader) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.String()
+    // Build the request.
+    req := &secretmanagerpb.AccessSecretVersionRequest{
+            Name: weatherKeyResourceID,
+    }
+
+    // Call the API.
+    result, err := client.AccessSecretVersion(ctx, req)
+    if err != nil {
+            return "", err
+    }
+    return string(result.Payload.Data), nil
 }
