@@ -118,13 +118,13 @@ func LibrariesLocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	fstoreErr := initFirestore(w)
 	if fstoreErr != nil {
-		http.Error(w, fstoreErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
 		log.Printf("Firestore Init failed: %v", fstoreErr)
 		return
 	}
 	libraries, libraryErr := locateLibraries(ctx, w, client, longitude, latitude, kilometers)
 	if libraryErr != nil {
-		http.Error(w, libraryErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
 		log.Printf("libraries location GET failed: %v", libraryErr)
 		return
 	}

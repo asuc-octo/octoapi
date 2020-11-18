@@ -36,6 +36,7 @@ var ctx context.Context
 var firestoreKeyResourceID = "projects/980046983693/secrets/firestore_access_key/versions/1"
 
 func LibraryOpenEndpoint(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	fstoreErr := initFirestore(w)
 	var timestamp int64
 	currtime := r.URL.Query().Get("time")
@@ -49,13 +50,13 @@ func LibraryOpenEndpoint(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if fstoreErr != nil {
-		http.Error(w, fstoreErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
 		log.Printf("Firestore Init failed: %v", fstoreErr)
 		return
 	}
 	libraries, libraryErr := openLibraries(ctx, w, client, timestamp)
 	if libraryErr != nil {
-		http.Error(w, libraryErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
 		log.Printf("libraries search GET failed: %v", libraryErr)
 		return
 	}
@@ -65,7 +66,6 @@ func LibraryOpenEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Printf("libraries JSON conversion failed: %v", jsonErr)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(output))
 }
 

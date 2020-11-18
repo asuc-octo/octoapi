@@ -37,13 +37,13 @@ func LibraryEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fstoreErr := initFirestore(w)
 	if fstoreErr != nil {
-		http.Error(w, fstoreErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
 		log.Printf("Firestore Init failed: %v", fstoreErr)
 		return
 	}
 	libraries, libraryErr := listLibraries(ctx, w, client)
 	if libraryErr != nil {
-		http.Error(w, libraryErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
 		log.Printf("libraries GET failed: %v", libraryErr)
 		return
 	}
