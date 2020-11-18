@@ -1,17 +1,17 @@
 package dining
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
-	"cloud.google.com/go/storage"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
 // type Dining struct {
@@ -24,52 +24,48 @@ import (
 // }
 
 var DiningFields = [6]string{"name", "description", "latitude", "longitude", "address", "phone"}
+var client *firestore.Client
+var ctx context.Context
+var firestoreKeyResourceID = "projects/980046983693/secrets/firestore_access_key/versions/1"
 
 func DiningEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	client, ctx, fstoreErr := initFirestore(w)
+	fstoreErr := initFirestore(w)
 	if fstoreErr != nil {
-		http.Error(w, fstoreErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
+		log.Printf("Firestore Init failed: %v", fstoreErr)
 		return
 	}
 	dinings, diningErr := listDinings(ctx, w, client)
 	if diningErr != nil {
-		http.Error(w, diningErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
+		log.Printf("dining GET failed: %v", diningErr)
 		return
 	}
 	output, jsonErr := json.Marshal(&dinings)
 	if jsonErr != nil {
 		http.Error(w, jsonErr.Error(), http.StatusInternalServerError)
+		log.Printf("libraries JSON conversion failed: %v", jsonErr)
 		return
 	}
 	fmt.Fprint(w, string(output))
 }
 
-func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context, error) {
-	ctx := context.Background()
-
-	/* Get Auth for accessing Firestore by getting json file in cloud storage*/
-	storageClient, clientErr := storage.NewClient(ctx)
-	if clientErr != nil {
-		return nil, nil, clientErr
+func initFirestore(w http.ResponseWriter) error {
+	ctx = context.Background()
+	/* Get Auth for accessing Firestore by getting firestore secret */
+	key, err := getFirestoreSecret(w)
+	if err != nil {
+		return err
 	}
-	defer storageClient.Close()
-	bkt := storageClient.Bucket("firestore_access")
-	obj := bkt.Object("berkeley-mobile-e0922919475f.json")
-	read, readErr := obj.NewReader(ctx)
-	if readErr != nil {
-		return nil, nil, readErr
-	}
-	defer read.Close()
-	json_input := StreamToByte(read) // the byte array of the json file
-
 	/* Load Firestore */
-	opt := option.WithCredentialsJSON(json_input)
-	client, new_err := firestore.NewClient(ctx, "berkeley-mobile", opt)
-	if new_err != nil {
-		return nil, nil, new_err
+	var clientErr error
+	opt := option.WithCredentialsJSON([]byte(key))
+	client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt)
+	if clientErr != nil {
+		return clientErr
 	}
-	return client, ctx, nil
+	return nil
 }
 
 func listDinings(ctx context.Context, w http.ResponseWriter, client *firestore.Client) ([]map[string]interface{}, error) {
@@ -94,8 +90,20 @@ func listDinings(ctx context.Context, w http.ResponseWriter, client *firestore.C
 	return dinings, nil
 }
 
-func StreamToByte(stream io.Reader) []byte {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.Bytes()
+func getFirestoreSecret(w http.ResponseWriter) (string, error) {
+	ctx := context.Background()
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		return "", err
+	}
+	// Build the request.
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: firestoreKeyResourceID,
+	}
+	// Call the API.
+	result, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	return string(result.Payload.Data), nil
 }
