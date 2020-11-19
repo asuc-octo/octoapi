@@ -76,7 +76,7 @@ func initFirestore(w http.ResponseWriter)  error {
 func getAllGyms(w http.ResponseWriter) ([]map[string]interface{}, error) {
     /* Read Documents from Firestore*/
     defer client.Close()
-    var gyms []map[string]interface{}
+    gyms := make([]map[string]interface{}, 0)
     iter := client.Collection("Gyms").Documents(ctx)
     for {
         doc, err := iter.Next()

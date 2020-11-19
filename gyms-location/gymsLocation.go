@@ -162,7 +162,7 @@ func initFirestore(w http.ResponseWriter)  error {
 // radius in meters
 func getGymsInRadius(w http.ResponseWriter, longitude float64, latitude float64, radius float64) ([]map[string]interface{}, error){
     defer client.Close()
-    var gyms []map[string]interface{}
+    gyms := make([]map[string]interface{}, 0)
     iter := client.Collection("Gyms").Documents(ctx)
     for {
         doc, err := iter.Next()

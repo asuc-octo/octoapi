@@ -99,7 +99,7 @@ func initFirestore(w http.ResponseWriter)  error {
 // radius in meters
 func getGymsOpen(w http.ResponseWriter, timestamp int64) ([]map[string]interface{}, error) {
     defer client.Close()
-    var gyms []map[string]interface{}
+    gyms := make([]map[string]interface{}, 0)
     iter := client.Collection("Gyms").Documents(ctx)
     for {
         doc, err := iter.Next()
