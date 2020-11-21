@@ -2,19 +2,23 @@
 package p
 
 import (
+    "context"
     "fmt"
     "io"
     "net/http"
 	"bytes"
-	"os"
     "encoding/json"
     "github.com/martinlindhe/unit"
     "github.com/gorilla/schema"
     "strconv"
     "strings"
+    secretmanager "cloud.google.com/go/secretmanager/apiv1"
+    secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
+
 )
 
 var apiURL = "http://api.actransit.org/transit/stops/{latitude}/{latitude}/{distance}"
+var transitKeyResourceID = "projects/980046983693/secrets/transit_api_key/versions/1"
 var berkeleyLat = "37.871853"
 var berkeleyLon = "-122.258423"
 var defaultDistance = 3.0
@@ -22,6 +26,7 @@ var decoder = schema.NewDecoder()
 
 func AllStops(w http.ResponseWriter, r *http.Request) {
 
+    // Read in query parameters
     var input struct {
         Longitude string `json:"longitude"`
         Latitude string `json:"latitude"`
@@ -29,7 +34,8 @@ func AllStops(w http.ResponseWriter, r *http.Request) {
         Unit string `json:"unit"`
     }
 	err := decoder.Decode(&input, r.URL.Query())
-	
+    
+    // Set default query parameters
     if err != nil {
 		http.Error(w, "paramter error: " + err.Error(), http.StatusBadRequest)
         return
@@ -44,7 +50,14 @@ func AllStops(w http.ResponseWriter, r *http.Request) {
         input.Unit = "mi"
     }
 
-    stops, err := getAllStops(w, input.Longitude, input.Latitude, convertToFeet(input.Radius, input.Unit))
+
+    // Read Transit API Key from Secrets Manager
+    key, err := getTransitSecret(w)
+    if err != nil {
+        http.Error(w, "Error retrieving api key: " + err.Error(), http.StatusInternalServerError)
+        return
+    }
+    stops, err := getAllStops(w, input.Longitude, input.Latitude, convertToFeet(input.Radius, input.Unit), key)
     if err != nil {
         http.Error(w, "error retrieving stops" + err.Error(), http.StatusInternalServerError)
         return
@@ -56,18 +69,14 @@ func AllStops(w http.ResponseWriter, r *http.Request) {
     }
 
 	fmt.Fprint(w, string(jsonString))
-	
 }
 
-func getAllStops(w http.ResponseWriter, longitude string, latitude string, radius float64) ([]map[string]interface{}, error) {
-	transitKey := os.Getenv("TRANSIT_API_KEY")
+func getAllStops(w http.ResponseWriter, longitude string, latitude string, radius float64, key string) ([]map[string]interface{}, error) {
     requestURL := strings.ReplaceAll(apiURL, "{latitude}", latitude)
     requestURL = strings.ReplaceAll(requestURL, "{longitude}", longitude)
-    distance := strconv.FormatFloat(radius, 'f', 10, 64)    
+    distance := strconv.FormatInt(int64(radius), 10)    
     requestURL = strings.ReplaceAll(requestURL, "{distance}", distance)
-    requestURL = requestURL + "?token=" + transitKey
-    fmt.Fprint(w, requestURL)
-    
+    requestURL = requestURL + "?token=" + key
 
 	resp, err := http.Get(requestURL)
 	if err != nil {
@@ -82,6 +91,26 @@ func getAllStops(w http.ResponseWriter, longitude string, latitude string, radiu
 		return nil, err
 	}
 	return stops, nil
+}
+
+func getTransitSecret(w http.ResponseWriter) (string, error) {
+    ctx := context.Background()
+    client, err := secretmanager.NewClient(ctx)
+    if err != nil {
+        return "", err
+    }
+
+    // Build the request.
+    req := &secretmanagerpb.AccessSecretVersionRequest{
+            Name: transitKeyResourceID,
+    }
+
+    // Call the API.
+    result, err := client.AccessSecretVersion(ctx, req)
+    if err != nil {
+            return "", err
+    }
+    return string(result.Payload.Data), nil
 }
 
 func convertToFeet(value float64, units string) float64 {
