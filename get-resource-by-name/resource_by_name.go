@@ -78,10 +78,10 @@ func initFirestore() error {
     return nil
 }
 
-func getResourceByName(name string) ([]map[string]interface{}, error) {
+func getResourceByName(name string) (map[string]interface{}, error) {
 
 	defer client.Close()
-	var resources []map[string]interface{}
+	var resource map[string]interface{}
 
 	iter := client.Collection("Campus Resource").Where("name", "==", name).Documents(ctx)
 
@@ -94,10 +94,11 @@ func getResourceByName(name string) ([]map[string]interface{}, error) {
         if err != nil {
                 return nil, err
         }
-        resources = append(resources, doc.Data())
+        resource = doc.Data()
+        break
 	}
 
-	return resources, nil
+	return resource, nil
 }
 
 
