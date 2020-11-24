@@ -21,7 +21,7 @@ func RoutesByStop(w http.ResponseWriter, r *http.Request) {
     stopID, ok := r.URL.Query()["stopID"]
     
     if !ok || len(stopID[0]) < 1 {
-        http.Error(w, "Error parsing query params: ", http.StatusInternalServerError)
+        http.Error(w, "Error parsing query params: ", http.StatusBadRequest)
         return
     }
     // Read Transit API Key from Secrets Manager
@@ -45,6 +45,7 @@ func RoutesByStop(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonString))
 }
 

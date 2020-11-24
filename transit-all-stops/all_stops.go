@@ -37,7 +37,7 @@ func AllStops(w http.ResponseWriter, r *http.Request) {
     
     // Set default query parameters
     if err != nil {
-		http.Error(w, "paramter error: " + err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error parsing parameters: " + err.Error(), http.StatusBadRequest)
         return
 	}
 	if input.Longitude == "" || input.Latitude == "" {
@@ -68,6 +68,7 @@ func AllStops(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonString))
 }
 

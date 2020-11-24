@@ -20,7 +20,7 @@ func RouteByName(w http.ResponseWriter, r *http.Request) {
     route, ok := r.URL.Query()["route"]
     
     if !ok || len(route[0]) < 1 {
-        http.Error(w, "Error parsing query params: ", http.StatusInternalServerError)
+        http.Error(w, "Query Param 'route' is missing", http.StatusBadRequest)
         return
     }
     // Read Transit API Key from Secrets Manager
@@ -44,6 +44,7 @@ func RouteByName(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonString))
 }
 
