@@ -12,8 +12,8 @@ import (
     "cloud.google.com/go/firestore"
     "cloud.google.com/go/storage"
     "google.golang.org/api/option"
-    "github.com/martinlindhe/unit"
     "github.com/gorilla/schema"
+    "log"
     "time"
 )
 
@@ -22,12 +22,16 @@ var ctx context.Context
 var decoder = schema.NewDecoder()
 
 func OpenResources(w http.ResponseWriter, r *http.Request) {
-    initFirestore(w)
+	err := initFirestore()
+    if err != nil {
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        return
+    }
 
 
     resources, err := getOpenResources(w)
     if err != nil {
-        http.Error(w, "Error obtaining responses: " + err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Error obtaining resources: " + err.Error(), http.StatusInternalServerError)
         return
     }
     jsonString, err := json.Marshal(resources)
@@ -36,8 +40,8 @@ func OpenResources(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-	fmt.Fprint(w, string(jsonString))
-	
+    w.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(w, string(jsonString))	
 }
 
 func getOpenResources(w http.ResponseWriter) ([]map[string]interface{}, error) {
@@ -77,19 +81,21 @@ func getOpenResources(w http.ResponseWriter) ([]map[string]interface{}, error) {
 	return resources, nil
 }
 
-func initFirestore(w http.ResponseWriter) {
+func initFirestore() error {
 	ctx = context.Background()
 
 	storageClient, err := storage.NewClient(ctx)
     if err != nil {
-        http.Error(w, "initFirestore: " + err.Error(), http.StatusInternalServerError)
+        log.Println(err.Error())
+        return err
     }
     defer storageClient.Close()
     bkt := storageClient.Bucket("firestore_access")
     obj := bkt.Object("berkeley-mobile-e0922919475f.json")
     read, readerErr := obj.NewReader(ctx)
     if readerErr != nil {
-        http.Error(w, "initFirestore: " + readerErr.Error(), http.StatusInternalServerError)
+        log.Println(readerErr.Error())
+        return readerErr
     }
     defer read.Close()
     json_input := StreamToByte(read)
@@ -98,35 +104,15 @@ func initFirestore(w http.ResponseWriter) {
 	var clientErr error
     client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt) //app.Firestore(ctx)
     if clientErr != nil {
-        http.Error(w, "initFirestore: " + clientErr.Error(), http.StatusInternalServerError)
+        log.Println(clientErr.Error())
+        return clientErr
     }
-}
 
-func convertToKilometers(value float64, units string) float64 {
-    switch units {
-        case "ft":
-            return (unit.Length(value) * unit.Foot).Kilometers()
-        case "yd":
-            return (unit.Length(value) * unit.Yard).Kilometers()
-        case "mi":
-            return (unit.Length(value) * unit.Mile).Kilometers()
-        case "m":
-            return (unit.Length(value) * unit.Meter).Kilometers()
-        case "km":
-            return (unit.Length(value) * unit.Kilometer).Kilometers()
-    }
-    return 0.0
+    return nil
 }
-
 
 func StreamToByte(stream io.Reader) []byte {
   buf := new(bytes.Buffer)
 	buf.ReadFrom(stream)
 	return buf.Bytes()
-}
-
-func StreamToString(stream io.Reader) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.String()
 }

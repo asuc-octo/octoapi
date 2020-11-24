@@ -12,44 +12,57 @@ import (
     "cloud.google.com/go/firestore"
     "cloud.google.com/go/storage"
     "google.golang.org/api/option"
-    "github.com/gorilla/schema"
+    "log"
 )
 
 var client *firestore.Client
 var ctx context.Context
 
 func ResourceByName(w http.ResponseWriter, r *http.Request) {
-	initFirestore(w)
+	err := initFirestore()
+    if err != nil {
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        return
+    }
 
     name, ok := r.URL.Query()["name"]
     
     if !ok || len(name[0]) < 1 {
-        http.Error(w, "Url Param 'key' is missing", http.StatusBadRequest)
+        http.Error(w, "Url Param 'name' is missing", http.StatusBadRequest)
         return
     }
 
-    jsonString, err := json.Marshal(getResourceByName(w, name[0]))
+    resources, err := getResourceByName(name[0])
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        http.Error(w, "Couldn't obtain resources", http.StatusInternalServerError)
+        return
     }
 
+    jsonString, err := json.Marshal(resources)
+    if err != nil {
+        http.Error(w, "Couldn't convert resources to json format", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonString))
-	
 }
 
-func initFirestore(w http.ResponseWriter) {
+func initFirestore() error {
 	ctx = context.Background()
 
 	storageClient, err := storage.NewClient(ctx)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        log.Println(err.Error())
+        return err
     }
     defer storageClient.Close()
     bkt := storageClient.Bucket("firestore_access")
     obj := bkt.Object("berkeley-mobile-e0922919475f.json")
     read, readerErr := obj.NewReader(ctx)
     if readerErr != nil {
-        http.Error(w, readerErr.Error(), http.StatusInternalServerError)
+        log.Println(readerErr.Error())
+        return readerErr
     }
     defer read.Close()
     json_input := StreamToByte(read)
@@ -58,11 +71,14 @@ func initFirestore(w http.ResponseWriter) {
 	var clientErr error
     client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt) //app.Firestore(ctx)
     if clientErr != nil {
-        http.Error(w, clientErr.Error(), http.StatusInternalServerError)
+        log.Println(clientErr.Error())
+        return clientErr
     }
+
+    return nil
 }
 
-func getResourceByName(w http.ResponseWriter, name string) []map[string]interface{} {
+func getResourceByName(name string) ([]map[string]interface{}, error) {
 
 	defer client.Close()
 	var resources []map[string]interface{}
@@ -76,13 +92,12 @@ func getResourceByName(w http.ResponseWriter, name string) []map[string]interfac
                 break
         }
         if err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return nil
+                return nil, err
         }
         resources = append(resources, doc.Data())
 	}
 
-	return resources
+	return resources, nil
 }
 
 
@@ -90,10 +105,4 @@ func StreamToByte(stream io.Reader) []byte {
   buf := new(bytes.Buffer)
 	buf.ReadFrom(stream)
 	return buf.Bytes()
-}
-
-func StreamToString(stream io.Reader) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.String()
 }

@@ -12,9 +12,10 @@ import (
     "cloud.google.com/go/firestore"
     "cloud.google.com/go/storage"
     "google.golang.org/api/option"
-    "github.com/martinlindhe/unit"
     "github.com/gorilla/schema"
+    "log"
     "strconv"
+    "time"
 )
 
 var client *firestore.Client
@@ -22,35 +23,40 @@ var ctx context.Context
 var decoder = schema.NewDecoder()
 
 func ResourceByTime(w http.ResponseWriter, r *http.Request) {
-    initFirestore(w)
+	err := initFirestore()
+    if err != nil {
+        http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+        return
+    }
 
     timeParam, ok := r.URL.Query()["time"]
+    var timestamp int64
     if !ok || len(timeParam[0]) < 1 {
-        http.Error(w, "Url Param 'time' is missing", http.StatusBadRequest)
-        return
-    }
-
-    timestamp, err := strconv.ParseFloat(timeParam[0], 64)
-    if err != nil {
-        http.Error(w, "Couldn't parse timestamp", http.StatusInternalServerError)
-        return
+        timestamp, err = strconv.ParseInt(timeParam[0], 10, 64)
+        if err != nil {
+            http.Error(w, "Query param 'time' is of inccorect type", http.StatusInternalServerError)
+            return
+        }
+    } else {
+        timestamp = time.Now().Unix()
     }
     
-
-    jsonString, err := json.Marshal(getResourceByTime(w, timestamp))
+    resources, err := getResourceByTime(timestamp)
+    jsonString, err := json.Marshal(resources)
     if err != nil {
         http.Error(w, "Error converting resources to string", http.StatusInternalServerError)
         return
     }
 
+    w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(jsonString))
-	
 }
 
-func getResourceByTime(w http.ResponseWriter, timestamp float64) []map[string]interface{} {
+func getResourceByTime(timestamp int64) ([]map[string]interface{}, error) {
 
 	defer client.Close()
-	var resources []map[string]interface{}
+    var resources []map[string]interface{}
+    floatTimestamp := float64(timestamp)
 
 	iter := client.Collection("Campus Resource").Documents(ctx)
 
@@ -61,8 +67,7 @@ func getResourceByTime(w http.ResponseWriter, timestamp float64) []map[string]in
                 break
         }
         if err != nil {
-                http.Error(w, "getResourceByTime: " + err.Error(), http.StatusInternalServerError)
-                return nil
+                return nil, err
         }
         docData := doc.Data()
         timeArray := docData["open_close_array"].([]interface{})
@@ -70,7 +75,7 @@ func getResourceByTime(w http.ResponseWriter, timestamp float64) []map[string]in
             entry := timeArray[i].(map[string]interface{})
             openTime := entry["open_time"].(float64)
             closeTime := entry["close_time"].(float64)
-            if timestamp < openTime || timestamp > closeTime {
+            if floatTimestamp < openTime || floatTimestamp > closeTime {
                 continue
             }
         }
@@ -78,22 +83,24 @@ func getResourceByTime(w http.ResponseWriter, timestamp float64) []map[string]in
 
         resources = append(resources, docData)
 	}
-	return resources
+	return resources, nil
 }
 
-func initFirestore(w http.ResponseWriter) {
+func initFirestore() error {
 	ctx = context.Background()
 
 	storageClient, err := storage.NewClient(ctx)
     if err != nil {
-        http.Error(w, "initFirestore: " + err.Error(), http.StatusInternalServerError)
+        log.Println(err.Error())
+        return err
     }
     defer storageClient.Close()
     bkt := storageClient.Bucket("firestore_access")
     obj := bkt.Object("berkeley-mobile-e0922919475f.json")
     read, readerErr := obj.NewReader(ctx)
     if readerErr != nil {
-        http.Error(w, "initFirestore: " + readerErr.Error(), http.StatusInternalServerError)
+        log.Println(readerErr.Error())
+        return readerErr
     }
     defer read.Close()
     json_input := StreamToByte(read)
@@ -102,35 +109,15 @@ func initFirestore(w http.ResponseWriter) {
 	var clientErr error
     client, clientErr = firestore.NewClient(ctx, "berkeley-mobile", opt) //app.Firestore(ctx)
     if clientErr != nil {
-        http.Error(w, "initFirestore: " + clientErr.Error(), http.StatusInternalServerError)
+        log.Println(clientErr.Error())
+        return clientErr
     }
-}
 
-func convertToKilometers(value float64, units string) float64 {
-    switch units {
-        case "ft":
-            return (unit.Length(value) * unit.Foot).Kilometers()
-        case "yd":
-            return (unit.Length(value) * unit.Yard).Kilometers()
-        case "mi":
-            return (unit.Length(value) * unit.Mile).Kilometers()
-        case "m":
-            return (unit.Length(value) * unit.Meter).Kilometers()
-        case "km":
-            return (unit.Length(value) * unit.Kilometer).Kilometers()
-    }
-    return 0.0
+    return nil
 }
-
 
 func StreamToByte(stream io.Reader) []byte {
   buf := new(bytes.Buffer)
 	buf.ReadFrom(stream)
 	return buf.Bytes()
-}
-
-func StreamToString(stream io.Reader) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
-	return buf.String()
 }
