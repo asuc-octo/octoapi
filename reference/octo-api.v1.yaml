@@ -628,7 +628,7 @@ definitions:
       - Name
       - StopId
   transit-route-destination-model:
-    description: ''
+    description: 'For more information take a look at the  [AC Transit API](http://api.actransit.org/transit/Help/Api/GET-stop-stopId-destinations)'
     type: object
     properties:
       RouteId:
@@ -692,11 +692,11 @@ definitions:
       - StopId
       - Status
       - RouteDestinations
-host: 'localhost:3000'
+host: 'api.octo.asuc.org'
 info:
   contact:
     email: octo.api@asuc.org
-  description: ' The OCTO API is a resource for student developers at Berkeley to have access to the same data that backs Berkeley Mobile, for the purpose of supporting student created applications. Please use this free resource fairly by not unnecessarily spamming the API and crediting Berkeley Mobile as the source. We do not provide guarantees about the correctness of the data, but we do try to maintain it to the best of our abilities.'
+  description: ' The OCTO API is a resource for student developers at Berkeley to have access to the same data that backs Berkeley Mobile, for the purpose of supporting student created applications and research projects. Please use this free resource fairly by not unnecessarily spamming the API and crediting ASUC OCTO as the source. We do not provide guarantees about the correctness of the data, but we do try to maintain it to the best of our abilities.'
   title: OCTO API
   version: '1.0'
 paths:
@@ -1495,7 +1495,8 @@ paths:
   /api/transit/routes:
     get:
       summary: Get all of AC Transit's routes
-      tags: [transit]
+      tags:
+        - transit
       responses:
         '200':
           description: OK
@@ -1515,13 +1516,14 @@ paths:
         '500':
           description: Internal Server Error
       operationId: get-api-transit-routes
-      description: Retrieves all of AC Transit's routes using [AC Transit API](http://api.actransit.org/transit/Help)
+      description: 'Retrieves all of AC Transit''s routes using [AC Transit API](http://api.actransit.org/transit/Help)'
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/transit-all-routes'
   /api/transit/stops:
     get:
       summary: Get all of AC Transit's currently active stops
-      tags: [transit]
+      tags:
+        - transit
       responses:
         '200':
           description: OK
@@ -1539,13 +1541,14 @@ paths:
         '500':
           description: Internal Server Error
       operationId: get-api-transit-stops
-      description: Retrieves all of AC Transit's currently active stops using [AC Transit API](http://api.actransit.org/transit/Help)
+      description: 'Retrieves all of AC Transit''s currently active stops using [AC Transit API](http://api.actransit.org/transit/Help)'
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/transit-all-stops'
   /api/transit/routes/search:
     get:
       summary: Get AC Transit route by name
-      tags: [transit]
+      tags:
+        - transit
       responses:
         '200':
           description: OK
@@ -1561,7 +1564,7 @@ paths:
         '500':
           description: Internal Server Error
       operationId: get-api-transit-routes-search
-      description: Retrieves the AC Transit route whose name matches the search string using [AC Transit API](http://api.actransit.org/transit/Help)
+      description: 'Retrieves the AC Transit route whose name matches the search string using [AC Transit API](http://api.actransit.org/transit/Help)'
       parameters:
         - type: string
           in: query
@@ -1573,7 +1576,8 @@ paths:
   /api/transit/stops/search:
     get:
       summary: Get a list of all routes and destinations for a given stop
-      tags: [transit]
+      tags:
+        - transit
       responses:
         '200':
           description: OK
@@ -1595,7 +1599,7 @@ paths:
         '500':
           description: Internal Server Error
       operationId: get-api-transit-stops-search
-      description: Retrieve a list of all routes and destinations for a given stop using [AC Transit API](http://api.actransit.org/transit/Help)
+      description: 'Retrieve a list of all routes and destinations for a given stop using [AC Transit API](http://api.actransit.org/transit/Help)'
       parameters:
         - type: string
           in: query
@@ -1697,7 +1701,6 @@ paths:
         - weather
       x-google-backend:
         address: 'https://us-central1-api-team-292919.cloudfunctions.net/weather'
-  
 schemes:
   - http
 swagger: '2.0'
@@ -1712,6 +1715,6 @@ tags:
     name: campus resources
   - description: AC Transit information
     name: transit
-  - description: Weather information in Berkeley, CA
+  - description: 'Weather information in Berkeley, CA'
     name: weather
 x-components: {}
