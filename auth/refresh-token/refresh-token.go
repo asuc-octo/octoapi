@@ -115,7 +115,7 @@ func getAccessToken(uid string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"uid":  uid,
 		"type": "access",
-		"exp":  time.Now().Add(time.Minute * 1).Unix(),
+		"exp":  time.Now().Add(time.Hour * 72).Unix(),
 	})
 	jwtTokenSecret, err := getJwtSecret()
 	if err != nil {

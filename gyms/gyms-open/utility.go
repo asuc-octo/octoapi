@@ -50,11 +50,11 @@ func getFirestoreSecret(w http.ResponseWriter) (string, error) {
 	return string(result.Payload.Data), nil
 }
 
-func getJwtSecret() (string, error) {
+func getJwtSecret() ([]byte, error) {
 	ctx := context.Background()
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// Build the request.
 	req := &secretmanagerpb.AccessSecretVersionRequest{
@@ -63,9 +63,9 @@ func getJwtSecret() (string, error) {
 	// Call the API.
 	result, err := client.AccessSecretVersion(ctx, req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(result.Payload.Data), nil
+	return []byte(string(result.Payload.Data)), nil
 }
 
 func validateAccessToken(r *http.Request) bool {

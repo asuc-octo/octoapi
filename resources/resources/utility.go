@@ -1,4 +1,4 @@
-package librariessearch
+package resources
 
 import (
 	"context"
