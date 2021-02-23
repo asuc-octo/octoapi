@@ -7,12 +7,17 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	// "github.com/auth0/go-jwt-middleware"
+	firebase "firebase.google.com/go"
 	"github.com/dgrijalva/jwt-go"
 
 	"cloud.google.com/go/firestore"
+
+	sendgrid "github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 type User struct {
@@ -29,7 +34,20 @@ type Tokens struct {
 }
 
 func AuthEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	// Set CORS headers for the main request.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Invalid body params", http.StatusBadRequest)
@@ -47,11 +65,35 @@ func AuthEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client, ctx, clientErr := initFirestore(w)
+
 	if clientErr != nil {
 		http.Error(w, clientErr.Error(), http.StatusInternalServerError)
 		log.Printf("firestore init failed: %v", clientErr)
 		return
 	}
+
+	defaultApp, err := firebase.NewApp(context.Background(), nil)
+	if err != nil {
+		http.Error(w, "Error while initializing the app.", http.StatusBadRequest)
+		return
+	}
+	defaultClient, err := defaultApp.Auth(context.Background())
+	if err != nil {
+		http.Error(w, "Error while setting the default app", http.StatusBadRequest)
+		return
+	}
+
+	user, err := defaultClient.GetUser(ctx, uid)
+	if err != nil {
+		http.Error(w, "Error while verifying the id", http.StatusBadRequest)
+		return
+	}
+
+	email := user.UserInfo.Email
+	if !strings.Contains(email, "berkeley.edu") {
+		http.Error(w, "Error while verifying user has berkeley email.", http.StatusBadRequest)
+	}
+
 	refreshToken, accessToken, tokenErr := getTokens(uid, client, ctx)
 	if tokenErr != nil {
 		http.Error(w, tokenErr.Error(), http.StatusBadRequest)
@@ -66,6 +108,7 @@ func AuthEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(tokensJSON)
+	sendEmail(email, string(tokensJSON))
 }
 
 func getTokens(uid string, client *firestore.Client, ctx context.Context) (string, string, error) {
@@ -145,3 +188,24 @@ func initFirestore(w http.ResponseWriter) (*firestore.Client, context.Context, e
 	}
 	return client, ctx, nil
 }
+
+func sendEmail(email string, tokens string) error {
+	emailSecret, emailSecretGenErr := getEmailSecret()
+	if emailSecretGenErr != nil {
+		return emailSecretGenErr
+	}
+	from := mail.NewEmail("OCTO API", "octo.api@asuc.org")
+	subject := "tokens for OCTO API Authorization"
+	to := mail.NewEmail("", email)
+	plainTextContent := tokens
+	message := mail.NewSingleEmail(from, subject, to, plainTextContent, plainTextContent)
+	emailclient := sendgrid.NewSendClient(emailSecret)
+	_, emailErr := emailclient.Send(message)
+	if emailErr != nil {
+		return emailErr
+	}
+	return nil
+}
+
+
+0x8048446

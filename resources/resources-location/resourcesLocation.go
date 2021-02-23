@@ -3,9 +3,12 @@ package resourceslocation
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
+	"strconv"
 
 	"cloud.google.com/go/firestore"
 	"github.com/gorilla/schema"
@@ -17,6 +20,8 @@ import (
 var client *firestore.Client
 var ctx context.Context
 var decoder = schema.NewDecoder()
+var floatType = reflect.TypeOf(float64(0))
+
 var unitMap = map[string]unit.Length{
 	"ft": unit.Foot,
 	"yd": unit.Yard,
@@ -26,37 +31,102 @@ var unitMap = map[string]unit.Length{
 }
 
 func ResourcesLocationEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	// Set CORS headers for the main request.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 
 	tokenValid := validateAccessToken(r)
 	if !tokenValid {
-		http.Error(w, "Invalid access token", http.StatusBadRequest)
+		http.Error(w, "Invalid Access Token: Make sure you are passing in an access token in the header of your request using bearer token authentication. To get your token please visit the Getting Started section on our API documentation page. Access tokens expire within 2 days, so make sure you retrieve your new valid access token using the refresh_token endpoint.", http.StatusBadRequest)
 		return
 	}
 
-	err := initFirestore(w)
+	var radius float64
+	var longitude float64
+	var latitude float64
+	var units string
+	var err error
+	radiusInput, ok := r.URL.Query()["radius"]
+	if ok {
+		if len(radiusInput[0]) >= 1 {
+			radius, err = strconv.ParseFloat(radiusInput[0], 64)
+			if err != nil {
+				http.Error(w, "Url Param 'radius' is of incorrect type", http.StatusBadRequest)
+				return
+			}
+		} else if len(radiusInput[0]) < 1 {
+			http.Error(w, "Url Param 'radius' is of incorrect type", http.StatusBadRequest)
+			return
+		}
+	} else {
+		http.Error(w, "Url Param 'radius' is missing", http.StatusBadRequest)
+		return
+	}
+	longitudeInput, ok := r.URL.Query()["longitude"]
+	if ok {
+		if len(longitudeInput[0]) >= 1 {
+			longitude, err = strconv.ParseFloat(longitudeInput[0], 64)
+			if err != nil {
+				http.Error(w, "Url Param 'longitude' is of incorrect type", http.StatusBadRequest)
+				return
+			}
+		} else if len(longitudeInput[0]) < 1 {
+			http.Error(w, "Url Param 'longitude' is of incorrect type", http.StatusBadRequest)
+			return
+		}
+	} else {
+		http.Error(w, "Url Param 'longitude' is missing", http.StatusBadRequest)
+		return
+	}
+
+	latitudeInput, ok := r.URL.Query()["latitude"]
+	if ok {
+		if len(latitudeInput[0]) >= 1 {
+			latitude, err = strconv.ParseFloat(latitudeInput[0], 64)
+			if err != nil {
+				http.Error(w, "Url Param 'latitude' is of incorrect type", http.StatusBadRequest)
+				return
+			}
+		} else if len(latitudeInput[0]) < 1 {
+			http.Error(w, "Url Param 'latitude' is of incorrect type", http.StatusBadRequest)
+			return
+		}
+	} else {
+		http.Error(w, "Url Param 'latitude' is missing", http.StatusBadRequest)
+		return
+	}
+
+	unitsInput, ok := r.URL.Query()["unit"]
+	if !ok || len(unitsInput) < 1 {
+		http.Error(w, "Url Param 'unit' is missing", http.StatusBadRequest)
+		return
+	}
+	units = unitsInput[0]
+
+	var kilometers float64
+	kilometers, err = convertToKilometers(radius, units)
 	if err != nil {
-		http.Error(w, "Couldn't connect to database", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var input struct {
-		Longitude float64 `json:"longitude"`
-		Latitude  float64 `json:"latitude"`
-		Radius    float64 `json:"radius"`
-		Unit      string  `json:"unit"`
-	}
-	err = decoder.Decode(&input, r.URL.Query())
-	if err != nil || input.Longitude == 0 || input.Latitude == 0 || input.Radius == 0 || input.Unit == "" {
-		http.Error(w, "Missing parameters or incorrect types", http.StatusBadRequest)
-		return
-	}
-	if _, ok := unitMap[input.Unit]; !ok {
-		http.Error(w, "Unsupported unit type", http.StatusBadRequest)
+	err = initFirestore(w)
+	if err != nil {
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		return
 	}
 
-	resources, err := getResourceByRange(input.Longitude, input.Latitude, convertToKilometers(input.Radius, input.Unit))
+	resources, err := getResourceByRange(longitude, latitude, kilometers)
 	jsonString, err := json.Marshal(resources)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -102,18 +172,21 @@ func getResourceByRange(longitude float64, latitude float64, radius float64) ([]
 	return resources, nil
 }
 
-func convertToKilometers(value float64, units string) float64 {
-	switch units {
-	case "ft":
-		return (unit.Length(value) * unit.Foot).Kilometers()
-	case "yd":
-		return (unit.Length(value) * unit.Yard).Kilometers()
-	case "mi":
-		return (unit.Length(value) * unit.Mile).Kilometers()
-	case "m":
-		return (unit.Length(value) * unit.Meter).Kilometers()
-	case "km":
-		return (unit.Length(value) * unit.Kilometer).Kilometers()
+func convertToKilometers(value float64, units string) (float64, error) {
+	unitConvert, valid := unitMap[units]
+	if valid {
+		return (unit.Length(value) * unitConvert).Kilometers(), nil
+	} else {
+		return 0, errors.New("URL Param 'unit' is incorrect")
 	}
-	return 0.0
+}
+
+func getFloat(unk interface{}) (float64, error) {
+	v := reflect.ValueOf(unk)
+	v = reflect.Indirect(v)
+	if !v.Type().ConvertibleTo(floatType) {
+		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
+	}
+	fv := v.Convert(floatType)
+	return fv.Float(), nil
 }

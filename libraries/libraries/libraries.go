@@ -30,29 +30,41 @@ var client *firestore.Client
 var ctx context.Context
 
 func LibraryEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	// Set CORS headers for the main request.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 
 	tokenValid := validateAccessToken(r)
 	if !tokenValid {
-		http.Error(w, "Invalid access token", http.StatusBadRequest)
+		http.Error(w, "Invalid Access Token: Make sure you are passing in an access token in the header of your request using bearer token authentication. To get your token please visit the Getting Started section on our API documentation page. Access tokens expire within 2 days, so make sure you retrieve your new valid access token using the refresh_token endpoint.", http.StatusBadRequest)
 		return
 	}
 
 	fstoreErr := initFirestore(w)
 	if fstoreErr != nil {
-		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		log.Printf("Firestore Init failed: %v", fstoreErr)
 		return
 	}
 	libraries, libraryErr := listLibraries(ctx, w, client)
 	if libraryErr != nil {
-		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		log.Printf("libraries GET failed: %v", libraryErr)
 		return
 	}
 	output, jsonErr := json.Marshal(&libraries)
 	if jsonErr != nil {
-		http.Error(w, jsonErr.Error(), http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		log.Printf("libraries JSON conversion failed: %v", jsonErr)
 		return
 	}

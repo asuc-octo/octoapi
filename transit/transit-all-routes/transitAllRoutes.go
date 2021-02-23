@@ -9,32 +9,44 @@ import (
 var apiURL = "http://api.actransit.org/transit/routes"
 
 func TransitAllRoutesEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	// Set CORS headers for the main request.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH,OPTIONS")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 
 	tokenValid := validateAccessToken(r)
 	if !tokenValid {
-		http.Error(w, "Invalid access token", http.StatusBadRequest)
+		http.Error(w, "Invalid Access Token: Make sure you are passing in an access token in the header of your request using bearer token authentication. To get your token please visit the Getting Started section on our API documentation page. Access tokens expire within 2 days, so make sure you retrieve your new valid access token using the refresh_token endpoint.", http.StatusBadRequest)
 		return
 	}
 
 	// Read Transit API Key from Secrets Manager
 	key, err := getTransitSecret(w)
 	if err != nil {
-		http.Error(w, "Error retrieving api key: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		return
 	}
 
 	// Call Transit API to obtain all routes
 	routes, err := getAllRoutes(key)
 	if err != nil {
-		http.Error(w, "error retrieving routes"+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		return
 	}
 
 	// Format results to JSON
 	jsonString, err := json.Marshal(routes)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		return
 	}
 

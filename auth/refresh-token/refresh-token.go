@@ -31,29 +31,29 @@ func RefreshAuthEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Invalid body params", http.StatusBadRequest)
+		http.Error(w, "Something went wrong. Please make sure you are passing your refresh token in the request body as {“refresh-token”: ‘<token>’}.", http.StatusBadRequest)
 		return
 	}
 	var data map[string]interface{}
 	jsonErr := json.Unmarshal([]byte(reqBody), &data)
 	if jsonErr != nil {
-		http.Error(w, jsonErr.Error(), http.StatusBadRequest)
+		http.Error(w, "Something went wrong. Please make sure you are passing your refresh token in the request body as {“refresh-token”: ‘<token>’}.", http.StatusBadRequest)
 		return
 	}
 	refreshToken, converttoken := data["refresh-token"].(string)
 	if !converttoken {
-		http.Error(w, "Invalid uid params", http.StatusBadRequest)
+		http.Error(w, "Something went wrong. Please make sure you are passing your refresh token in the request body as {“refresh-token”: ‘<token>’}.", http.StatusBadRequest)
 		return
 	}
 	uid, decodeErr := decodeRefreshToken(refreshToken)
 	if decodeErr != nil {
-		http.Error(w, decodeErr.Error(), http.StatusBadRequest)
+		http.Error(w, "Something went wrong. Please make sure you are passing your refresh token in the request body as {“refresh-token”: ‘<token>’}.", http.StatusBadRequest)
 		return
 	}
 
 	client, ctx, clientErr := initFirestore(w)
 	if clientErr != nil {
-		http.Error(w, "Couldn’t connect to database", http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
 		log.Printf("firestore init failed: %v", clientErr)
 		return
 	}
@@ -65,7 +65,7 @@ func RefreshAuthEndpoint(w http.ResponseWriter, r *http.Request) {
 	tokens := Tokens{token}
 	tokensJSON, jsonErr := json.Marshal(tokens)
 	if jsonErr != nil {
-		http.Error(w, "Couldn’t get tokens", http.StatusInternalServerError)
+		http.Error(w, "Something went wrong. Please make sure you are passing your refresh token in the request body as {“refresh-token”: ‘<token>’}.", http.StatusBadRequest)
 		log.Printf("token generation failed: %v", jsonErr)
 		return
 	}
@@ -98,11 +98,11 @@ func getAccessToken(uid string, client *firestore.Client, ctx context.Context) (
 	// first check if user already exists in the database
 	userQuery, queryErr := client.Collection("users").Doc(uid).Get(ctx)
 	if queryErr != nil {
-		return "", errors.New("invalid refresh token")
+		return "", errors.New("Something went wrong. Please make sure you are passing your refresh token in the request body as {“refresh-token”: ‘<token>’}.")
 	}
 	userData := userQuery.Data()
 	if userData["blocked"].(bool) {
-		return "", errors.New("user is blocked")
+		return "", errors.New("Your account has been blocked. If you believe something went wrong, please contact octo.api@asuc.org for details.")
 	}
 	newJwtToken, tokenGenErr := getAccessToken(uid)
 	if tokenGenErr != nil {
